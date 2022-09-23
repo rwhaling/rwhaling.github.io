@@ -10,8 +10,6 @@
 no automatic rendering yet
 - publishes from `docs/` dir in `main`
 - make sure you are in the root of the repo
-- `zola build`
-- `rm -rf docs/*` 
-- `cp -r public/* docs/`
+- `zola build --output-dir docs` (will prompt you to delete/overwrite)
 - `git commit`
 - `git push`
