@@ -1,7 +1,7 @@
 +++
 title = "Hello World"
 date = "2022-10-23"
-description = "Literally, the first blog post"
+description = "Literally the first blog post"
 +++
 
 Well, here we are.  After a long break from writing in general, and social media in particular, I'm back.  Blogging was tremendous for me - it led me into conference speaking, and that into writing my book, "Modern Systems Programming with Scala Native." 
