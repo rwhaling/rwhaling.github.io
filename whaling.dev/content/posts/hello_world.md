@@ -4,7 +4,7 @@ date = "2022-10-23"
 description = "Literally the first blog post"
 +++
 
-Well, here we are.  After a long break from writing in general, and social media in particular, I'm back.  Blogging was tremendous for me - it led me into conference speaking, and that into writing my book, "Modern Systems Programming with Scala Native."
+Well, here we are.  After a long break from writing in general, and social media in particular, I'm back.  Blogging was tremendous for me - it led me into conference speaking, and that into writing my book, "Modern Systems Programming with Scala Native." 
 
 The whole process was initially very organic - one post = one conference talk = one book chapter, which covered about 4 of the 10 total chapters in the book.  But once I started cranking out the remaining chapters, something shifted - all of a sudden, I wasn't getting that feedback, and all of the content was locked behind a paywall and a long publishing cycle.  I'll skip the full story of the sheer number of things that happened around the time of the book's eventual release, but the start of the COVID pandemic was just one of them, and it ended up being more than two years before I could really come up for air.
 
