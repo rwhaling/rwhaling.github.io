@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>
+         WebAssembly embed test
+        
+    </title>
+    
+
+    
+         <link rel="icon" type="image/png" href=&#x2F;icon&#x2F;favicon.png />
+    
+
+    
+
+    
+
+    
+
+    
+    
+        <script src=https://whaling.dev/js/feather.min.js></script>
+    
+
+
+    
+        <link href=https://whaling.dev/css/fonts.css rel="stylesheet" />
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://whaling.dev/css/main.css />
+
+    
+        <link
+            rel="stylesheet"
+            id="darkModeStyle"
+            type="text/css"
+            href=https://whaling.dev/css/dark.css
+            
+            
+                disabled
+            
+        />
+    
+
+
+    
+
+
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main" id="main_title">
+        <a href=https:&#x2F;&#x2F;whaling.dev></a>
+    </div>
+
+    <nav>
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme()" href=""></a>
+            <script src=https://whaling.dev/js/themetoggle.js></script>
+        
+    </nav>
+</header>
+
+
+        
+    
+<main>
+    <article>
+        <div class="title">
+            <h1 class="title">WebAssembly embed test</h1>
+            <div class="meta">
+                
+                on  2022-10-08
+
+                
+            </div>
+        </div>
+
+        
+
+        <section class="body">
+            <p>No idea if this will work, but:</p>
+<iframe width="656" height="496" frameBorder=0 src="./wrapper.html"></iframe>
+<p>If the above shows a black screen with the text <code>Hello Rust World</code> - then we're in business.  I think it is considerably more likely to work on desktop browsers than mobile, but we'll see.</p>
+<p>What's happening: I discovered Herbert Wolverson's lovely <a href="https://bfnightly.bracketproductions.com/">Rust Roguelike Tutorial</a> and it's accompanying <a href="https://pragprog.com/titles/hwrust/hands-on-rust/">book</a> and <a href="https://github.com/amethyst/bracket-lib">library</a>, and in particular, saw that it's WebAssembly support appeared to be more stable and better documented than anything else I've seen.</p>
+<p>Of course, nothing about WebAssembly is particularly stable and documented, but I was able to get the &quot;hello, world&quot; running locally, both native and in wasm, after an hour or two of poking around, despite not understanding how cargo works AT ALL.</p>
+<p>Why? I, uh, really like roguelike and other kinds of dorky rpg games, and I find myself spending a fair amount of my free mental bandwidth thinking about them. I think game design in general is fascinating, especially where it works with the same kinds of random and pseudorandom processes I work with in music.  rltk/bracket is especially suited for this, since it has a <a href="https://github.com/amethyst/bracket-lib/tree/master/bracket-noise">very nice implementation</a> of <a href="https://en.wikipedia.org/wiki/Perlin_noise">perlin noise</a> and many other aesthetically interesting noise algorithms.</p>
+<p>But - I don't really &quot;get&quot; gamedev, with its elaborate IDE's, gnarly packaging and releasing, and corporate platform gatekeepers, and I'm not particularly interested in learning that world.  And I'm especially uninterested in spending years of my life meticulously crafting a commercial, releasable game.</p>
+<p>Instead, I'm hoping that this zola/rust/webassembly toolchain gives me a platform for building small, fun programs, that either exhibit some simple game design ideas, or just pure generative audiovisual work, that I can embed in a essay-like format - indeed, if the above link works, this post itself arguably accomplishes that;</p>
+<p>e.g., the code for the above looks like this:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>rltk::{Rltk, GameState};
+</span><span>
+</span><span style="color:#b48ead;">struct </span><span>State {}
+</span><span style="color:#b48ead;">impl </span><span>GameState </span><span style="color:#b48ead;">for </span><span>State {
+</span><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">tick</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">ctx </span><span>: &amp;</span><span style="color:#b48ead;">mut</span><span> Rltk) {
+</span><span>        ctx.</span><span style="color:#96b5b4;">cls</span><span>();
+</span><span>        ctx.</span><span style="color:#96b5b4;">print</span><span>(</span><span style="color:#d08770;">1</span><span>, </span><span style="color:#d08770;">1</span><span>, &quot;</span><span style="color:#a3be8c;">Hello Rust World</span><span>&quot;);
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">main</span><span>() -&gt; rltk::BError {
+</span><span>    </span><span style="color:#b48ead;">use </span><span>rltk::RltkBuilder;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> context = RltkBuilder::simple80x50()
+</span><span>        .</span><span style="color:#96b5b4;">with_title</span><span>(&quot;</span><span style="color:#a3be8c;">Roguelike Tutorial</span><span>&quot;)
+</span><span>        .</span><span style="color:#96b5b4;">build</span><span>()?;
+</span><span>    </span><span style="color:#b48ead;">let</span><span> gs = State{ };
+</span><span>    rltk::main_loop(context, gs)
+</span><span>}
+</span></code></pre>
+<p>I'm not willing to go as far as Knuth's <a href="https://www-cs-faculty.stanford.edu/~knuth/lp.html">literate programming</a> approach; instead, I'm hoping each post in this format works more or less like the kind of blog posts or book chapters I used to write - an intersting program of medium length, and a medium-length essay describing how it works in whatever level of detail is interesting.</p>
+<p>I won't speculate too much about where it goes from here - let's see if this works at all, and how reliably - but if it does, I'm excited to start hacking on things like this a lot more often.</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+
+        <footer>
+  <div style="display:flex">
+    
+        <a class="soc" href=https:&#x2F;&#x2F;github.com&#x2F;richardwhaling title=GitHub>
+            <i data-feather=github></i>
+        </a>
+    
+  </div>
+  <div class="footer-info">
+    2022 © richard whaling | <a
+      href="https://github.com/XXXMrG/archie-zola">Archie-Zola Theme</a>
+  </div>
+</footer>
+
+
+<script>
+    feather.replace();
+</script>
+
+
+    </div>
+</body>
+
+</html>
