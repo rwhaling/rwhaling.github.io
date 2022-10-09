@@ -87,15 +87,11 @@
         
 
         <section class="body">
-            <p>No idea if this will work, but:</p>
+            <p>No idea if this will work, but, if does, you'll see a black terminal screen below with the text <code>Hello Rust World</code>:</p>
 <iframe width="656" height="496" frameBorder=0 src="./wrapper.html"></iframe>
-<p>If the above shows a black screen with the text <code>Hello Rust World</code> - then we're in business.  I think it is considerably more likely to work on desktop browsers than mobile, but we'll see.</p>
+<p>I think this is considerably more likely to work on desktop browsers than mobile, but we'll see.</p>
 <p>What's happening: I discovered Herbert Wolverson's lovely <a href="https://bfnightly.bracketproductions.com/">Rust Roguelike Tutorial</a> and it's accompanying <a href="https://pragprog.com/titles/hwrust/hands-on-rust/">book</a> and <a href="https://github.com/amethyst/bracket-lib">library</a>, and in particular, saw that it's WebAssembly support appeared to be more stable and better documented than anything else I've seen.</p>
-<p>Of course, nothing about WebAssembly is particularly stable and documented, but I was able to get the &quot;hello, world&quot; running locally, both native and in wasm, after an hour or two of poking around, despite not understanding how cargo works AT ALL.</p>
-<p>Why? I, uh, really like roguelike and other kinds of dorky rpg games, and I find myself spending a fair amount of my free mental bandwidth thinking about them. I think game design in general is fascinating, especially where it works with the same kinds of random and pseudorandom processes I work with in music.  rltk/bracket is especially suited for this, since it has a <a href="https://github.com/amethyst/bracket-lib/tree/master/bracket-noise">very nice implementation</a> of <a href="https://en.wikipedia.org/wiki/Perlin_noise">perlin noise</a> and many other aesthetically interesting noise algorithms.</p>
-<p>But - I don't really &quot;get&quot; gamedev, with its elaborate IDE's, gnarly packaging and releasing, and corporate platform gatekeepers, and I'm not particularly interested in learning that world.  And I'm especially uninterested in spending years of my life meticulously crafting a commercial, releasable game.</p>
-<p>Instead, I'm hoping that this zola/rust/webassembly toolchain gives me a platform for building small, fun programs, that either exhibit some simple game design ideas, or just pure generative audiovisual work, that I can embed in a essay-like format - indeed, if the above link works, this post itself arguably accomplishes that;</p>
-<p>e.g., the code for the above looks like this:</p>
+<p>Here's the program running above:</p>
 <pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">use </span><span>rltk::{Rltk, GameState};
 </span><span>
 </span><span style="color:#b48ead;">struct </span><span>State {}
@@ -115,8 +111,12 @@
 </span><span>    rltk::main_loop(context, gs)
 </span><span>}
 </span></code></pre>
-<p>I'm not willing to go as far as Knuth's <a href="https://www-cs-faculty.stanford.edu/~knuth/lp.html">literate programming</a> approach; instead, I'm hoping each post in this format works more or less like the kind of blog posts or book chapters I used to write - an intersting program of medium length, and a medium-length essay describing how it works in whatever level of detail is interesting.</p>
-<p>I won't speculate too much about where it goes from here - let's see if this works at all, and how reliably - but if it does, I'm excited to start hacking on things like this a lot more often.</p>
+<p>And when I say &quot;running above&quot; I mean it - the Rust code above is compiled into webassembly, and deployed to this Github Pages static site, and runs in the browser in an iframe, embedded in the markdown for this post.</p>
+<p>Why? I, uh, really like roguelike and other kinds of dorky rpg games, and I find myself spending a fair amount of my free mental bandwidth thinking about them. I think game design in general is fascinating, especially where it works with the same kinds of random and pseudorandom processes I work with in music.  rltk/bracket is especially suited for this, since it has a <a href="https://github.com/amethyst/bracket-lib/tree/master/bracket-noise">very nice implementation</a> of <a href="https://en.wikipedia.org/wiki/Perlin_noise">perlin noise</a> and many other aesthetically interesting noise algorithms.</p>
+<p>But - I don't really &quot;get&quot; gamedev, with its elaborate IDE's and platform gatekeepers, and I'm not particularly interested in learning that world.  And I'm especially uninterested in spending years of my life meticulously crafting a commercial, releasable game.</p>
+<p>Instead, I'm hoping that this zola/rust/webassembly toolchain gives me a platform for building small, fun programs, that either exhibit some simple game design ideas, or just pure generative audiovisual work, that I can embed in a essay-like format - indeed, if the above program works, this post itself arguably accomplishes that.</p>
+<p>I'm not willing to go as far as Knuth's <a href="https://www-cs-faculty.stanford.edu/~knuth/lp.html">literate programming</a> approach; instead, I'm hoping each post in this format works more or less like the kind of blog posts or book chapters I used to write - an interesting program of medium length, and an essay describing how it works in whatever level of detail I care to provide.</p>
+<p>I won't speculate too much about where it all goes from here - let's see if this works at all, and how reliably - but if it does, I'm excited to start hacking on things like this a lot more often.</p>
 
         </section>
 
