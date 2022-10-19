@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>
+         untitled roguelike test 1
+        
+    </title>
+    
+
+    
+         <link rel="icon" type="image/png" href=&#x2F;icon&#x2F;favicon.png />
+    
+
+    
+
+    
+
+    
+
+    
+    
+        <script src=https://whaling.dev/js/feather.min.js></script>
+    
+
+
+    
+        <link href=https://whaling.dev/css/fonts.css rel="stylesheet" />
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://whaling.dev/css/main.css />
+
+    
+        <link
+            rel="stylesheet"
+            id="darkModeStyle"
+            type="text/css"
+            href=https://whaling.dev/css/dark.css
+            
+            
+                disabled
+            
+        />
+    
+
+
+    
+
+
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main" id="main_title">
+        <a href=https:&#x2F;&#x2F;whaling.dev></a>
+    </div>
+
+    <nav>
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme()" href=""></a>
+            <script src=https://whaling.dev/js/themetoggle.js></script>
+        
+    </nav>
+</header>
+
+
+        
+    
+<main>
+    <article>
+        <div class="title">
+            <h1 class="title">untitled roguelike test 1</h1>
+            <div class="meta">
+                
+                on  2022-10-08
+
+                
+            </div>
+        </div>
+
+        
+
+        <section class="body">
+            <p>No idea if this will work, but, if does, you'll see a black terminal screen below with the title screen for <code>richard's untitled roguelike</code>:</p>
+<p><canvas id="canvas" width="640" height="480"></canvas></p>
+<script src="./wasm/untitled_1v1.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+    await wasm_bindgen("./wasm/untitled_1v1_bg.wasm");
+    });
+</script>
+<p>I think this is considerably more likely to work on desktop browsers than mobile, but we'll see.</p>
+<p>What's happening: I discovered Herbert Wolverson's lovely <a href="https://bfnightly.bracketproductions.com/">Rust Roguelike Tutorial</a> and it's accompanying <a href="https://pragprog.com/titles/hwrust/hands-on-rust/">book</a> and <a href="https://github.com/amethyst/bracket-lib">library</a>, and in particular, saw that it's WebAssembly support appeared to be more stable and better documented than anything else I've seen.</p>
+<p>The program running above is adapted from chapter 8, changing some of the map rendering logic for vibes, adding the menu based on some later chapters, and my favorite contribution, a targeting system and target/command selection menu on the right hand side, which I think is the first non-trivial Rust I've ever written:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">update_targeting</span><span>(</span><span style="color:#bf616a;">ecs</span><span>: &amp;World, </span><span style="color:#bf616a;">_ctx</span><span>: &amp;</span><span style="color:#b48ead;">mut</span><span> Rltk) {
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> combat_stats = ecs.write_storage::&lt;CombatStats&gt;();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> players = ecs.write_storage::&lt;Player&gt;();
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">let</span><span> monsters = ecs.read_storage::&lt;Monster&gt;();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> positions = ecs.read_storage::&lt;Position&gt;();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> entities = ecs.</span><span style="color:#96b5b4;">entities</span><span>();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> map = ecs.fetch::&lt;Map&gt;();
+</span><span>
+</span><span>    </span><span style="color:#b48ead;">for </span><span>(_player, player_stats) in (&amp;</span><span style="color:#b48ead;">mut</span><span> players, &amp;</span><span style="color:#b48ead;">mut</span><span> combat_stats).</span><span style="color:#96b5b4;">join</span><span>() {
+</span><span>        </span><span style="color:#b48ead;">let mut</span><span> current_target_seen = </span><span style="color:#d08770;">false</span><span>;
+</span><span>        player_stats.visible_targets.</span><span style="color:#96b5b4;">clear</span><span>();
+</span><span>    
+</span><span>        </span><span style="color:#b48ead;">for </span><span>(entity, _monster, position) in (&amp;entities, &amp;monsters, &amp;positions).</span><span style="color:#96b5b4;">join</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">let</span><span> idx = map.</span><span style="color:#96b5b4;">xy_idx</span><span>(position.x, position.y);
+</span><span>            </span><span style="color:#b48ead;">if</span><span> map.visible_tiles[idx] == </span><span style="color:#d08770;">true </span><span>{
+</span><span>                </span><span style="color:#b48ead;">if</span><span> player_stats.current_target == None {
+</span><span>                    console::log(&quot;</span><span style="color:#a3be8c;">saw new target</span><span>&quot;);
+</span><span>                    player_stats.current_target = Some(entity);
+</span><span>                    current_target_seen = </span><span style="color:#d08770;">true</span><span>;
+</span><span>                } </span><span style="color:#b48ead;">else if</span><span> player_stats.current_target == Some(entity) {
+</span><span>                    current_target_seen = </span><span style="color:#d08770;">true</span><span>;
+</span><span>                }
+</span><span>                player_stats.visible_targets.</span><span style="color:#96b5b4;">push</span><span>(entity);
+</span><span>            }
+</span><span>        }    
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">if</span><span> current_target_seen == </span><span style="color:#d08770;">false </span><span>&amp;&amp; player_stats.current_target != None {
+</span><span>            player_stats.current_target = None;
+</span><span>            console::log(&quot;</span><span style="color:#a3be8c;">didn&#39;t see current target</span><span>&quot;);
+</span><span>        }    
+</span><span>    }
+</span><span>    </span><span style="color:#b48ead;">return</span><span>;
+</span><span>}
+</span></code></pre>
+<p>This was fun for me - I think the big surprise is that the rust ownership/mutability semantics were a lot less intrusive than I thought they would be, and I was consistently surprised how often the compiler was able to help me - I don't think I was ever stuck on references/mutability stuff for more than 10-15 minutes.  In part that's because I'm working in an engine that solves a lot of this architecturally via the <code>ecs.read_storage</code> methods, etc., and design of a framework like this is obviously an enormous undertaking, but still, I'm surprised how not-problematic the whole thing was.</p>
+<p>Likewise, compiling to wasm and pushing the wasm to the Github Pages static hosting was straightforward; in this case I just literally inserted a few lines of HTML into the markdown for this post's <code>index.md</code>:</p>
+<pre data-lang="html" style="background-color:#2b303b;color:#c0c5ce;" class="language-html "><code class="language-html" data-lang="html"><span>&lt;</span><span style="color:#bf616a;">canvas </span><span style="color:#8fa1b3;">id</span><span>=&quot;</span><span style="color:#a3be8c;">canvas</span><span>&quot; </span><span style="color:#d08770;">width</span><span>=&quot;</span><span style="color:#a3be8c;">640</span><span>&quot; </span><span style="color:#d08770;">height</span><span>=&quot;</span><span style="color:#a3be8c;">480</span><span>&quot;&gt;&lt;/</span><span style="color:#bf616a;">canvas</span><span>&gt;
+</span><span>&lt;</span><span style="color:#bf616a;">script </span><span style="color:#d08770;">src</span><span>=&quot;</span><span style="color:#a3be8c;">./wasm/untitled_1v1.js</span><span>&quot;&gt;&lt;/</span><span style="color:#bf616a;">script</span><span>&gt;
+</span><span>&lt;</span><span style="color:#bf616a;">script</span><span>&gt;
+</span><span>    window.</span><span style="color:#bf616a;">addEventListener</span><span>(&quot;</span><span style="color:#a3be8c;">load</span><span>&quot;, </span><span style="color:#b48ead;">async </span><span>() </span><span style="color:#b48ead;">=&gt; </span><span>{
+</span><span>    </span><span style="color:#b48ead;">await </span><span style="color:#bf616a;">wasm_bindgen</span><span>(&quot;</span><span style="color:#a3be8c;">./wasm/untitled_1v1_bg.wasm</span><span>&quot;);
+</span><span>    });
+</span><span>&lt;/</span><span style="color:#bf616a;">script</span><span>&gt;
+</span></code></pre>
+<p>Why? I, uh, really enjoy many different kinds of role-playing and similar games, and I find myself spending a fair amount of my free mental bandwidth thinking about them. I think game design in general is fascinating, especially where it works with the same kinds of random and pseudorandom processes I work with in music.  rltk/bracket is especially suited for this, since it has a <a href="https://github.com/amethyst/bracket-lib/tree/master/bracket-noise">very nice implementation</a> of <a href="https://en.wikipedia.org/wiki/Perlin_noise">perlin noise</a> and many other aesthetically interesting noise algorithms.</p>
+<p>So what's next? I don't consider this project complete yet - it's playable but it's not fun, and not really a game.  I'd like to add a few more systems to make it more engaging: </p>
+<ol>
+<li>guard and stamina meters for the player and for monsters</li>
+<li>stance changes for guard up/guard down</li>
+<li>guard break</li>
+<li>separate monster AI for &quot;grunt&quot; and &quot;tank&quot; enemies</li>
+<li>health regeneration + gradual permanent health damage</li>
+</ol>
+<p>I think with those changes, some work on balance and difficulty, and 3-4 different enemies, I'd have something more like a completed prototype, rather than the tech demo I have so far.</p>
+<p>But we'll see where we go from here, and I'll write another post with some actual game design ideas and vision once I get there.</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+
+        <footer>
+  <div style="display:flex">
+    
+        <a class="soc" href=https:&#x2F;&#x2F;github.com&#x2F;richardwhaling title=GitHub>
+            <i data-feather=github></i>
+        </a>
+    
+  </div>
+  <div class="footer-info">
+    2022 © richard whaling | <a
+      href="https://github.com/XXXMrG/archie-zola">Archie-Zola Theme</a>
+  </div>
+</footer>
+
+
+<script>
+    feather.replace();
+</script>
+
+
+    </div>
+</body>
+
+</html>
