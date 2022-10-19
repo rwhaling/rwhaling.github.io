@@ -1,6 +1,6 @@
 +++
 title = "Hello World"
-date = "2022-10-23"
+date = "2022-09-23"
 description = "Literally the first blog post"
 +++
 
