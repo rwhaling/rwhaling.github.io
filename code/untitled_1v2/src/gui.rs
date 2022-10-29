@@ -66,7 +66,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
             ctx.print(51, 9 + gui_offset, format!("(X/Sp) Wait              "));
             ctx.print(51, 10 + gui_offset, format!("(J) Attack Target       "));
             ctx.print(51, 11 + gui_offset, format!("(K) Strong Attack Target"));
-            ctx.print(51, 12 + gui_offset, format!("(K) Change Stance       "));
+            ctx.print(51, 12 + gui_offset, format!("(L) Change Stance       "));
 
         }
     }
