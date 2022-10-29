@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>
+         untitled roguelike test 2
+        
+    </title>
+    
+
+    
+         <link rel="icon" type="image/png" href=&#x2F;icon&#x2F;favicon.png />
+    
+
+    
+
+    
+
+    
+
+    
+    
+        <script src=https://whaling.dev/js/feather.min.js></script>
+    
+
+
+    
+        <link href=https://whaling.dev/css/fonts.css rel="stylesheet" />
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://whaling.dev/css/main.css />
+
+    
+        <link
+            rel="stylesheet"
+            id="darkModeStyle"
+            type="text/css"
+            href=https://whaling.dev/css/dark.css
+            
+            
+                disabled
+            
+        />
+    
+
+
+    
+
+
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main" id="main_title">
+        <a href=https:&#x2F;&#x2F;whaling.dev></a>
+    </div>
+
+    <nav>
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme()" href=""></a>
+            <script src=https://whaling.dev/js/themetoggle.js></script>
+        
+    </nav>
+</header>
+
+
+        
+    
+<main>
+    <article>
+        <div class="title">
+            <h1 class="title">untitled roguelike test 2</h1>
+            <div class="meta">
+                
+                on  2022-10-29
+
+                
+            </div>
+        </div>
+
+        
+
+        <section class="body">
+            <p>This one will probably be a shorter status update, since I am neck-deep in the actual game at this point.  I'll cut to the chase and share a build up here:</p>
+<p><canvas id="canvas" width="640" height="480"></canvas></p>
+<script src="./wasm/untitled_1v2.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+    await wasm_bindgen("./wasm/untitled_1v2_bg.wasm");
+    });
+</script>
+<p>I think I am now within a stone's throw of feature-complete; I've added stamina meters, normal and strong melee attacks, waiting/resting to regen stamina/hp, and reworked the whole combat/damage system to support those features.</p>
+<p>What I am finding as I go is that I am diverging from the architectural patterns in Wolverson's book - more and more, this game is turning out to be a turn-based RPG, and closer to Dragon Quest than Nethack mechanically, and as a result, more and more of the logic is getting consolidated into a system I'm calling <code>CombatIntent</code> for now, which gets fed either by player input or monster AI.</p>
+<p>e.g., here is the player attack code:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#b48ead;">pub fn </span><span style="color:#8fa1b3;">try_attack_current_target</span><span>(</span><span style="color:#bf616a;">intent</span><span>:CombatIntents, </span><span style="color:#bf616a;">ecs</span><span>: &amp;World) -&gt; RunState {
+</span><span>    </span><span style="color:#b48ead;">let</span><span> combat_stats = ecs.write_storage::&lt;CombatStats&gt;();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> combat_intent = ecs.write_storage::&lt;CombatIntent&gt;();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> player = ecs.read_storage::&lt;Player&gt;();
+</span><span>    </span><span style="color:#b48ead;">let mut</span><span> map = ecs.fetch::&lt;Map&gt;();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> positions = ecs.read_storage::&lt;Position&gt;();
+</span><span>    </span><span style="color:#b48ead;">let</span><span> entities = ecs.</span><span style="color:#96b5b4;">entities</span><span>();
+</span><span>
+</span><span>    console::log(format!(&quot;</span><span style="color:#a3be8c;">trying to attack current target</span><span>&quot;));
+</span><span>    </span><span style="color:#b48ead;">for </span><span>(_player,player_entity, stats,player_pos) in (&amp;player, &amp;entities, &amp;combat_stats, &amp;positions).</span><span style="color:#96b5b4;">join</span><span>() {
+</span><span>        </span><span style="color:#b48ead;">match</span><span> stats.current_target {
+</span><span>            Some(target) =&gt; {
+</span><span>                </span><span style="color:#b48ead;">let</span><span> target_pos = positions.</span><span style="color:#96b5b4;">get</span><span>(target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>
+</span><span>                </span><span style="color:#b48ead;">let</span><span> distance = rltk::DistanceAlg::Pythagoras.</span><span style="color:#96b5b4;">distance2d</span><span>(Point::new(target_pos.x, target_pos.y), Point::new(player_pos.x, player_pos.y));
+</span><span>                </span><span style="color:#b48ead;">if</span><span> distance &lt; </span><span style="color:#d08770;">1.5 </span><span>{
+</span><span>                    combat_intent.</span><span style="color:#96b5b4;">insert</span><span>(player_entity, CombatIntent{ intent: intent, target: Some(target) }).</span><span style="color:#96b5b4;">expect</span><span>(&quot;</span><span style="color:#a3be8c;">Unable to insert attack</span><span>&quot;);
+</span><span>                    </span><span style="color:#b48ead;">return </span><span>RunState::PlayerTurn
+</span><span>                } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                    console::log(format!(&quot;</span><span style="color:#a3be8c;">distance to target </span><span style="color:#d08770;">{:?}</span><span style="color:#a3be8c;"> is </span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">, can&#39;t attack</span><span>&quot;, target, distance));
+</span><span>                    </span><span style="color:#b48ead;">return </span><span>RunState::AwaitingInput
+</span><span>                }
+</span><span>            },
+</span><span>            _ =&gt; {
+</span><span>                console::log(format!(&quot;</span><span style="color:#a3be8c;">no target selected, can&#39;t attack</span><span>&quot;));
+</span><span>                </span><span style="color:#b48ead;">return </span><span>RunState::AwaitingInput
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="color:#b48ead;">return </span><span>RunState::AwaitingInput
+</span><span>}
+</span></code></pre>
+<p>and here is the handling logic for it in the CombatIntent system:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>    </span><span style="color:#b48ead;">fn </span><span style="color:#8fa1b3;">run</span><span>(&amp;</span><span style="color:#b48ead;">mut </span><span style="color:#bf616a;">self</span><span>, </span><span style="color:#bf616a;">data </span><span>: </span><span style="color:#b48ead;">Self::</span><span>SystemData) {
+</span><span>        </span><span style="color:#b48ead;">let </span><span>(entities, </span><span style="color:#b48ead;">mut</span><span> log, </span><span style="color:#b48ead;">mut</span><span> combat_intents, names, combat_stats, </span><span style="color:#b48ead;">mut</span><span> inflict_damage, </span><span style="color:#b48ead;">mut</span><span> rng) = data;
+</span><span>
+</span><span>        </span><span style="color:#b48ead;">for </span><span>(entity, combat_intent, name, stats) in (&amp;entities, &amp;combat_intents, &amp;names, &amp;combat_stats).</span><span style="color:#96b5b4;">join</span><span>() {
+</span><span>            </span><span style="color:#b48ead;">match</span><span> combat_intent {
+</span><span>                CombatIntent{ intent: CombatIntents::Melee, target: Some(target) } =&gt; {
+</span><span>                    log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> will try to attack</span><span>&quot;, name.name));
+</span><span>                    </span><span style="color:#b48ead;">if</span><span> stats.hp &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> target_stats = combat_stats.</span><span style="color:#96b5b4;">get</span><span>(*target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                        </span><span style="color:#b48ead;">if</span><span> stats.ep &gt;= stats.attack_cost {
+</span><span>                            </span><span style="color:#b48ead;">if</span><span> target_stats.hp &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> target_name = names.</span><span style="color:#96b5b4;">get</span><span>(*target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> def_adj = </span><span style="color:#b48ead;">if</span><span> target_stats.stance == CombatStance::GuardUp { </span><span style="color:#d08770;">1 </span><span>} </span><span style="color:#b48ead;">else </span><span>{ </span><span style="color:#d08770;">0 </span><span>};
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> eff_def = target_stats.defense + def_adj;
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> eff_pow = stats.power;
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> damage = </span><span style="color:#96b5b4;">damage_formula</span><span>(&amp;</span><span style="color:#b48ead;">mut</span><span> rng,eff_pow,eff_def);
+</span><span>                                log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hits </span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">, for </span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hp.</span><span>&quot;, &amp;name.name, &amp;target_name.name, damage));
+</span><span>                                SufferDamage::new_hp_damage(&amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage, *target, damage);
+</span><span>                                SufferDamage::new_ep_damage(&amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage, entity, stats.attack_cost);
+</span><span>                            }
+</span><span>                        } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                            log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> cannot attack, insufficient energy, resting instead</span><span>&quot;, &amp;name.name));
+</span><span>                            </span><span style="color:#96b5b4;">rest_or_default</span><span>(entity, stats, &amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage);
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>                CombatIntent{ intent: CombatIntents::StrongMelee, target: Some(target) } =&gt; {
+</span><span>                    log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> will try to STRONG attack</span><span>&quot;, name.name));
+</span><span>                    </span><span style="color:#b48ead;">if</span><span> stats.hp &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                        </span><span style="color:#b48ead;">let</span><span> target_stats = combat_stats.</span><span style="color:#96b5b4;">get</span><span>(*target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                        </span><span style="color:#b48ead;">if</span><span> stats.ep &gt;= (stats.attack_cost + </span><span style="color:#d08770;">10</span><span>) {
+</span><span>                            </span><span style="color:#b48ead;">if</span><span> target_stats.hp &gt; </span><span style="color:#d08770;">0 </span><span>{
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> target_name = names.</span><span style="color:#96b5b4;">get</span><span>(*target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> def_adj = </span><span style="color:#b48ead;">if</span><span> target_stats.stance == CombatStance::GuardUp { </span><span style="color:#d08770;">1 </span><span>} </span><span style="color:#b48ead;">else </span><span>{ </span><span style="color:#d08770;">0 </span><span>};
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> eff_def = target_stats.defense + def_adj;
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> eff_pow = stats.power + </span><span style="color:#d08770;">1</span><span>;
+</span><span>                                </span><span style="color:#b48ead;">let</span><span> damage = </span><span style="color:#96b5b4;">damage_formula</span><span>(&amp;</span><span style="color:#b48ead;">mut</span><span> rng,eff_pow,eff_def);
+</span><span>                                log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hits </span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> fiercely for </span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hp.</span><span>&quot;, &amp;name.name, &amp;target_name.name, damage));
+</span><span>                                SufferDamage::new_hp_damage(&amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage, *target, damage);
+</span><span>                                SufferDamage::new_ep_damage(&amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage, entity, stats.attack_cost + </span><span style="color:#d08770;">10</span><span>);
+</span><span>                            }
+</span><span>                        } </span><span style="color:#b48ead;">else </span><span>{
+</span><span>                            log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> cannot attack, insufficient energy, resting instead</span><span>&quot;, &amp;name.name));
+</span><span>                            </span><span style="color:#96b5b4;">rest_or_default</span><span>(entity, stats, &amp;</span><span style="color:#b48ead;">mut</span><span> inflict_damage);
+</span><span>                        }
+</span><span>                    }
+</span><span>
+</span><span>                }
+</span><span>                ...
+</span></code></pre>
+<p>That's a lot of code, but I think where I see this going is that almost all game logic and rules would probably end up basically in a GameMove system or somethign like that, with some auxiliary systems upstream; and as a result, I think I'd be moving away also from having many different components for each entity, and instead consolidating almost everything into the <code>CombatStats</code> component now.</p>
+<p>That said, even if it's not deeply exercising the ECS, I still like it - I feel a deep affinity between specs' component/join workflows and the relational database modeling and transformation that I do in my day job.</p>
+<p>Aside from that, I'll also just note that Rust continues to impress me - I still don't have a good intuition for borrows, references, etc., but it literally doesn't matter, the compiler just tells me when I do it wrong; I can't say my code is 100% bug-free, but it's been surprisingly close for an ambititous project in a new language.  And most importantly, I'm having fun - side projects die off pretty fast when I'm not enjoying the actual coding.</p>
+<p>Up next - I need to add stamina damage and the guard break feature, and then spend a lot of time on polish, enemy AI, balance, and UI.  But I think that gives me a good chance of getting to a good stopping point by Thanksgiving, and seeing where I want to go from there.</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+
+        <footer>
+  <div style="display:flex">
+    
+        <a class="soc" href=https:&#x2F;&#x2F;github.com&#x2F;richardwhaling title=GitHub>
+            <i data-feather=github></i>
+        </a>
+    
+  </div>
+  <div class="footer-info">
+    2022 © richard whaling | <a
+      href="https://github.com/XXXMrG/archie-zola">Archie-Zola Theme</a>
+  </div>
+</footer>
+
+
+<script>
+    feather.replace();
+</script>
+
+
+    </div>
+</body>
+
+</html>
