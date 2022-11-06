@@ -1,4 +1,4 @@
-use rltk::{ console, RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point, FastNoise};
+use rltk::{ RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point, FastNoise};
 use super::{Rect};
 use std::cmp::{max, min};
 use specs::prelude::*;
@@ -97,8 +97,6 @@ impl Map {
         const MAX_ROOMS : i32 = 30;
         const MIN_SIZE : i32 = 6;
         const MAX_SIZE : i32 = 10;
-
-        let mut rng = RandomNumberGenerator::new();
 
         for _i in 0..MAX_ROOMS {
             let w = rng.range(MIN_SIZE, MAX_SIZE);

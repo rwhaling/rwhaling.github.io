@@ -2,7 +2,7 @@ use rltk::{VirtualKeyCode, Rltk, Point};
 use specs::prelude::*;
 use std::cmp::{max, min};
 use super::{Position, Player, Viewshed, State, CombatStats, CombatStance, Map, Monster, RunState, Action, ActionType, Attack};
-use rltk::console;
+// use rltk::console;
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -75,7 +75,7 @@ pub fn update_targeting(ecs: &World, _ctx: &mut Rltk) {
 
 pub fn try_select_target(selection: usize, ecs: &World) -> RunState {
     let mut combat_stats = ecs.write_storage::<CombatStats>();
-    let mut players = ecs.read_storage::<Player>();
+    let players = ecs.read_storage::<Player>();
 
     // console::log(format!("selected target {}", selection));
     for (_player,stats) in (&players, &mut combat_stats).join() {
@@ -95,7 +95,6 @@ pub fn try_attack_current_target(attack:Attack, ecs: &World) -> RunState {
     let combat_stats = ecs.write_storage::<CombatStats>();
     let mut combat_intent = ecs.write_storage::<Action>();
     let player = ecs.read_storage::<Player>();
-    let mut map = ecs.fetch::<Map>();
     let positions = ecs.read_storage::<Position>();
     let entities = ecs.entities();
 
