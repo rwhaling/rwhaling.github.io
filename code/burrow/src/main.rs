@@ -179,7 +179,7 @@ impl GameState for State {
             let mut runwriter = self.ecs.write_resource::<RunState>();
             *runwriter = newrunstate;
         }
-        melee_combat_system::delete_the_dead(&mut self.ecs);
+        action_system::delete_the_dead(&mut self.ecs);
     }
 }
 
