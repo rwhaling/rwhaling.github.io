@@ -1,4 +1,4 @@
-use rltk::{GameState, Rltk, Point, RGB, register_palette_color};
+use rltk::{GameState, Rltk, RGB, register_palette_color};
 use specs::prelude::*;
 mod components;
 pub use components::*;
@@ -75,8 +75,6 @@ impl State {
         // Place the player and update resources
         let (player_x, player_y) = worldmap.rooms[0].center();
         let player_entity = spawner::player(&mut self.ecs, player_x, player_y);
-        let mut player_position = self.ecs.write_resource::<Point>();
-        *player_position = Point::new(player_x, player_y);
         let mut position_components = self.ecs.write_storage::<Position>();
         let mut player_entity_writer = self.ecs.write_resource::<Entity>();
         *player_entity_writer = player_entity;
@@ -120,8 +118,6 @@ impl GameState for State {
                     let map = self.ecs.fetch::<Map>();
 
                     let data = (&positions, &renderables).join().collect::<Vec<_>>();
-                    // make above let mut
-                    // data.sort_by(|&a, &b| b.1.render_order.cmp(&a.1.render_order) );
                     for (pos, render) in data.iter() {
                         let idx = map.xy_idx(pos.x, pos.y);
                         if map.visible_tiles[idx] { ctx.set(pos.x, pos.y, render.fg, render.bg, render.glyph) }
@@ -226,7 +222,6 @@ fn main() -> rltk::BError {
     }
 
     gs.ecs.insert(map);
-    gs.ecs.insert(Point::new(player_x, player_y));
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(player_entity);
     gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });

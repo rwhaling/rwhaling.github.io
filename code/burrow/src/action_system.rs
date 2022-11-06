@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use super::{CombatStats, Action, ActionType, Attack, CombatStance, Name, Player, gamelog::GameLog, RunState};
+use super::{CombatStats, Action, ActionType, Attack, CombatStance, Name, Player, Position, gamelog::GameLog, RunState, Map, Viewshed};
 // use rltk::console;
 
 pub struct ActionSystem {}
@@ -7,19 +7,23 @@ pub struct ActionSystem {}
 impl<'a> System<'a> for ActionSystem {
     #[allow(clippy::type_complexity)]
     type SystemData = ( Entities<'a>,
+                        ReadExpect<'a, Entity>,
                         WriteExpect<'a, GameLog>,
                         WriteStorage<'a, Action>,
                         ReadStorage<'a, Name>,
                         WriteStorage<'a, CombatStats>,
+                        WriteExpect<'a, Map>,
+                        WriteStorage<'a, Position>,
+                        WriteStorage<'a, Viewshed>,
                         WriteExpect<'a, rltk::RandomNumberGenerator>
                     );
 
     fn run(&mut self, data : Self::SystemData) {
-        let (entities, mut log, mut actions, names, mut combat_stats, mut rng) = data;
+        let (entities, player_entity, mut log, mut actions, names, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng) = data;
 
         for (entity, name, action) in (&entities, &names, &actions).join() {
             match action {
-                Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(target) } => {
+                Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(target), .. } => {
                     let raw_damage: i32;
                     let ep_cost: i32;
                     let current_ep: i32;
@@ -50,7 +54,7 @@ impl<'a> System<'a> for ActionSystem {
                         }
                     }
                 }
-                Action{ action_type: ActionType::Attack, attack: Some(Attack::StrongMelee), target: Some(target) } => {
+                Action{ action_type: ActionType::Attack, attack: Some(Attack::StrongMelee), target: Some(target), .. } => {
                     // log.entries.push(format!("{} will try to STRONG attack", name.name));
                     let raw_damage: i32;
                     let ep_damage: i32;
@@ -85,11 +89,22 @@ impl<'a> System<'a> for ActionSystem {
                         }
                     }
                 }
-                Action{ action_type: ActionType::Wait, attack: None, target: None } => {
+                Action{ action_type: ActionType::Wait, attack: None, target: None, .. } => {
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                     rest_or_default(&mut subject_stats);
                 }
-                Action{ action_type: ActionType::Move, attack: None, target: None } => {
+                Action{ action_type: ActionType::Move, attack: None, target: None, position: Some(Position {x,y}) } => {
+                    let mut pos = positions.get_mut(entity).unwrap();
+                    let mut viewshed = viewsheds.get_mut(entity).unwrap();
+                    pos.x = *x;
+                    pos.y = *y;
+
+                    let idx = map.xy_idx(pos.x, pos.y);
+                    if entity != *player_entity {
+                        map.blocked[idx] = true;
+                    }
+                    viewshed.dirty = true;
+
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                     move_regen(&mut subject_stats);
                 }
@@ -114,9 +129,13 @@ pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
     stats.ep -= amount;
     if stats.ep < 0 {
         stats.ep = 0;
+        stats.stance = CombatStance::GuardBreak;
     }
     if stats.ep >= stats.max_ep {
         stats.ep = stats.max_ep;
+        if stats.stance == CombatStance::GuardBreak {
+            stats.stance = CombatStance::GuardDown;
+        }
     }
 
 }

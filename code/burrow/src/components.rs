@@ -2,7 +2,7 @@ use specs::prelude::*;
 use specs_derive::*;
 use rltk::{RGB};
 
-#[derive(Component)]
+#[derive(Component, Debug, Clone)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -68,6 +68,7 @@ pub enum Attack { Melee, StrongMelee }
 pub struct Action {
     pub action_type: ActionType,
     pub attack: Option<Attack>,
-    pub target : Option<Entity>
+    pub target : Option<Entity>,
+    pub position: Option<Position>
 }
 

@@ -1,5 +1,5 @@
 use rltk::{ RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point, FastNoise};
-use super::{Rect};
+use super::{Rect, Position};
 use std::cmp::{max, min};
 use specs::prelude::*;
 
@@ -175,7 +175,12 @@ impl Algorithm2D for Map {
 pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
     let mut map = ecs.fetch_mut::<Map>();
     let mut noise = FastNoise::new();
-    let player_pos = ecs.fetch::<Point>();
+    let player_ent = ecs.fetch::<Entity>();
+    let positions = ecs.read_storage::<Position>();
+
+    let player_ent_pos = positions.get(*player_ent).unwrap();
+    let player_pos = Point::new(player_ent_pos.x,player_ent_pos.y);
+
     noise.set_seed(map.noise_seed);
 
     map.frame_count += 1;
@@ -191,7 +196,7 @@ pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
             let mut fg;
             let mut bg;
 
-            let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(x, y), *player_pos);
+            let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(x, y), player_pos);
             let dist_factor = 1.0 - ((distance - 3.0).max(0.0)/ 9.0) - (noise.get_noise3d(0.08 * x as f32, 0.08 * y as f32, 0.14 * map.frame_count as f32) * 0.1);
             // console::log(format!("{},{} distance: {}, dist_factor: {}", x,y, distance, dist_factor));
             

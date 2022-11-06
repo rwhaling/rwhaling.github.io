@@ -1,38 +1,32 @@
 use rltk::{VirtualKeyCode, Rltk, Point};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, Viewshed, State, CombatStats, CombatStance, Map, Monster, RunState, Action, ActionType, Attack};
-// use rltk::console;
+use super::{Position, Player, State, CombatStats, CombatStance, Map, Monster, RunState, Action, ActionType, Attack};
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let players = ecs.read_storage::<Player>();
-    let mut viewsheds = ecs.write_storage::<Viewshed>();
     let entities = ecs.entities();
     let combat_stats = ecs.read_storage::<CombatStats>();
     let map = ecs.fetch::<Map>();
     let mut combat_intent = ecs.write_storage::<Action>();
 
-    for (entity, _player, pos, viewshed) in (&entities, &players, &mut positions, &mut viewsheds).join() {
+    for (entity, _player, pos) in (&entities, &players, &mut positions).join() {
         if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1 || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { return; }
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
 
         for potential_target in map.tile_content[destination_idx].iter() {
             let target = combat_stats.get(*potential_target);
             if let Some(_target) = target {
-                combat_intent.insert(entity, Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(*potential_target) }).expect("Add target failed");
+                combat_intent.insert(entity, Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(*potential_target), position: None }).expect("Add target failed");
                 return;
             }
         }
 
         if !map.blocked[destination_idx] {
-            pos.x = min(79 , max(0, pos.x + delta_x));
-            pos.y = min(49, max(0, pos.y + delta_y));
-            combat_intent.insert(entity, Action{ action_type: ActionType::Move, attack:None, target: None}).expect("Move intent failed");
-            viewshed.dirty = true;
-            let mut ppos = ecs.write_resource::<Point>();
-            ppos.x = pos.x;
-            ppos.y = pos.y;
+            let new_x = min(79 , max(0, pos.x + delta_x));
+            let new_y = min(49, max(0, pos.y + delta_y));
+            combat_intent.insert(entity, Action{ action_type: ActionType::Move, attack:None, target: None, position: Some(Position { x: new_x, y: new_y })}).expect("Move intent failed");
         }
     }
 }
@@ -54,11 +48,9 @@ pub fn update_targeting(ecs: &World, _ctx: &mut Rltk) {
             let idx = map.xy_idx(position.x, position.y);
             if map.visible_tiles[idx] == true {
                 if player_stats.current_target == None {
-                    // console::log("saw new target");
                     player_stats.current_target = Some(entity);
                     current_target_seen = true;
                 } else if player_stats.current_target == Some(entity) {
-                    // console::log("saw current target");
                     current_target_seen = true;
                 }
                 player_stats.visible_targets.push(entity);
@@ -67,7 +59,6 @@ pub fn update_targeting(ecs: &World, _ctx: &mut Rltk) {
 
         if current_target_seen == false && player_stats.current_target != None {
             player_stats.current_target = None;
-            // console::log("didn't see current target");
         }    
     }
     return; 
@@ -106,7 +97,7 @@ pub fn try_attack_current_target(attack:Attack, ecs: &World) -> RunState {
 
                 let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(target_pos.x, target_pos.y), Point::new(player_pos.x, player_pos.y));
                 if distance < 1.5 {
-                    combat_intent.insert(player_entity, Action{ action_type: ActionType::Attack, attack:Some(attack), target: Some(target) }).expect("Unable to insert attack");
+                    combat_intent.insert(player_entity, Action{ action_type: ActionType::Attack, attack:Some(attack), target: Some(target), position: None }).expect("Unable to insert attack");
                     return RunState::PlayerTurn
                 } else {
                     // console::log(format!("distance to target {:?} is {}, can't attack", target, distance));
@@ -146,7 +137,7 @@ pub fn rest(ecs: &mut World) -> RunState {
     let mut combat_intent = ecs.write_storage::<Action>();
     
     for (entity, _player) in (&entities, &players).join() {
-        combat_intent.insert(entity, Action{ action_type: ActionType::Wait, attack: None, target:None }).expect("Rest failed");
+        combat_intent.insert(entity, Action{ action_type: ActionType::Wait, attack: None, target:None, position: None }).expect("Rest failed");
     }
 
     return RunState::PlayerTurn
