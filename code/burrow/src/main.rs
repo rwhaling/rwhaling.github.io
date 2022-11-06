@@ -16,8 +16,6 @@ mod map_indexing_system;
 use map_indexing_system::MapIndexingSystem;
 mod melee_combat_system;
 use melee_combat_system::MeleeCombatSystem;
-mod damage_system;
-use damage_system::DamageSystem;
 mod gui;
 mod gamelog;
 use gamelog::GameLog;
@@ -47,8 +45,6 @@ impl State {
         mapindex.run_now(&self.ecs);
         let mut melee = MeleeCombatSystem{};
         melee.run_now(&self.ecs);
-        let mut damage = DamageSystem{};
-        damage.run_now(&self.ecs);
         self.ecs.maintain();
     }
 
@@ -183,7 +179,7 @@ impl GameState for State {
             let mut runwriter = self.ecs.write_resource::<RunState>();
             *runwriter = newrunstate;
         }
-        damage_system::delete_the_dead(&mut self.ecs);
+        melee_combat_system::delete_the_dead(&mut self.ecs);
     }
 }
 
@@ -216,8 +212,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<Name>();
     gs.ecs.register::<BlocksTile>();
     gs.ecs.register::<CombatStats>();
-    gs.ecs.register::<CombatIntent>();
-    gs.ecs.register::<SufferDamage>();
+    gs.ecs.register::<Action>();
 
     let map : Map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();

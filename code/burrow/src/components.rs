@@ -56,36 +56,18 @@ pub struct CombatStats {
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
-pub enum CombatIntents { Move, Wait, Melee, StrongMelee }
+pub enum ActionType { Move, Wait, Attack}
+
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum Attack { Melee, StrongMelee }
+
+// #[derive(PartialEq, Copy, Clone, Debug)]
+// pub enum CombatIntents { Move, Wait, Melee, StrongMelee }
 
 #[derive(Component, Debug, Clone)]
-pub struct CombatIntent {
-    pub intent: CombatIntents,
+pub struct Action {
+    pub action_type: ActionType,
+    pub attack: Option<Attack>,
     pub target : Option<Entity>
 }
 
-#[derive(Component, Debug)]
-pub struct SufferDamage {
-    pub hp_amount : Vec<i32>,
-    pub ep_amount : Vec<i32>
-}
-
-impl SufferDamage {
-    pub fn new_hp_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
-        if let Some(suffering) = store.get_mut(victim) {
-            suffering.hp_amount.push(amount);
-        } else {
-            let dmg = SufferDamage { hp_amount : vec![amount], ep_amount: vec![] };
-            store.insert(victim, dmg).expect("Unable to insert damage");
-        }
-    }
-
-    pub fn new_ep_damage(store: &mut WriteStorage<SufferDamage>, victim: Entity, amount: i32) {
-        if let Some(suffering) = store.get_mut(victim) {
-            suffering.ep_amount.push(amount);
-        } else {
-            let dmg = SufferDamage { hp_amount : vec![], ep_amount: vec![amount] };
-            store.insert(victim, dmg).expect("Unable to insert ep damage");
-        }
-    }
-}

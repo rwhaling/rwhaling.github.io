@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use super::{Viewshed, Monster, Map, Position, CombatIntent, CombatIntents, CombatStats, RunState};
+use super::{Viewshed, Monster, Map, Position, Action, ActionType, Attack, CombatStats, RunState};
 use rltk::{Point};
 
 pub struct MonsterAI {}
@@ -14,7 +14,7 @@ impl<'a> System<'a> for MonsterAI {
                         WriteStorage<'a, Viewshed>,
                         ReadStorage<'a, Monster>,
                         WriteStorage<'a, Position>,
-                        WriteStorage<'a, CombatIntent>,
+                        WriteStorage<'a, Action>,
                         WriteStorage<'a, CombatStats>);
 
     fn run(&mut self, data : Self::SystemData) {
@@ -34,7 +34,7 @@ impl<'a> System<'a> for MonsterAI {
     
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), *player_pos);
             if distance < 1.5 {
-                combat_intent.insert(entity, CombatIntent{ intent: CombatIntents::Melee, target: Some(*player_entity) }).expect("Unable to insert attack");
+                combat_intent.insert(entity, Action{ action_type:ActionType::Attack, attack:Some(Attack::Melee), target: Some(*player_entity) }).expect("Unable to insert attack");
             }
             else if viewshed.visible_tiles.contains(&*player_pos) {
                 // Path to the player
@@ -48,15 +48,15 @@ impl<'a> System<'a> for MonsterAI {
                     map.blocked[idx] = false;
                     pos.x = path.steps[1] as i32 % map.width;
                     pos.y = path.steps[1] as i32 / map.width;
-                    combat_intent.insert(entity, CombatIntent{ intent: CombatIntents::Move, target: None }).expect("Unable to insert move");
+                    combat_intent.insert(entity, Action{ action_type:ActionType::Move, attack:None, target:None }).expect("Unable to insert move");
                     idx = map.xy_idx(pos.x, pos.y);
                     map.blocked[idx] = true;
                     viewshed.dirty = true;
                 } else {
-                    combat_intent.insert(entity, CombatIntent{ intent: CombatIntents::Wait, target: None }).expect("Unable to insert wait");
+                    combat_intent.insert(entity, Action{ action_type:ActionType::Wait, attack:None, target:None }).expect("Unable to insert move");
                 }
             } else {
-                combat_intent.insert(entity, CombatIntent{ intent: CombatIntents::Wait, target: None }).expect("Unable to insert wait");
+                combat_intent.insert(entity, Action{ action_type:ActionType::Wait, attack:None, target:None }).expect("Unable to insert move");
             }
         }
     }
