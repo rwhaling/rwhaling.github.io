@@ -14,8 +14,8 @@ mod monster_ai_system;
 use monster_ai_system::MonsterAI;
 mod map_indexing_system;
 use map_indexing_system::MapIndexingSystem;
-mod melee_combat_system;
-use melee_combat_system::MeleeCombatSystem;
+mod action_system;
+use action_system::ActionSystem;
 mod gui;
 mod gamelog;
 use gamelog::GameLog;
@@ -43,7 +43,7 @@ impl State {
         mob.run_now(&self.ecs);
         let mut mapindex = MapIndexingSystem{};
         mapindex.run_now(&self.ecs);
-        let mut melee = MeleeCombatSystem{};
+        let mut melee = ActionSystem{};
         melee.run_now(&self.ecs);
         self.ecs.maintain();
     }
