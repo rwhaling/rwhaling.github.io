@@ -83,12 +83,11 @@ pub enum SmartMonsterState {
 #[derive(PartialEq, Component, Debug, Clone)]
 pub struct SmartMonster {
     pub state: SmartMonsterState,
-    pub is_smart: bool,
     pub time_in_current_state: i32,
     pub target_location: Option<Position>,
     pub primary_stance: CombatStance,
     pub primary_attack: Attack,
     pub recover_ep_threshold: i32,
-    pub chase_chance: i32 // actual chance is the inverse, 1/2, 1/4, etc.
+    pub chase_chance: f32
 }
 

@@ -34,11 +34,11 @@ pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
     }
 }
 
-fn orc(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('o'), 12, 20, 4, 0, "Orc"); }
-fn goblin(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('g'), 22, 30, 2, 0, "Goblin"); }
-fn goblin_knight(ecs: &mut World, x: i32, y: i32) { smart_monster(ecs, x, y, rltk::to_cp437('G'), 25, 40, 3, 1, "Goblin Knight"); }
+fn orc(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('o'), 15, 30, 4, 0, "Orc", CombatStance::GuardDown, Attack::StrongMelee, 0.2, 0); }
+fn goblin(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('g'), 18, 30, 2, 0, "Goblin", CombatStance::GuardDown, Attack::Melee, 0.4, 0); }
+fn goblin_knight(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('G'), 25, 40, 3, 1, "Goblin Knight", CombatStance::GuardDown, Attack::Melee, 0.5, 20); }
 
-fn monster<S : ToString>(ecs: &mut World, x: i32, y: i32, glyph : rltk::FontCharType, hp:i32, ep:i32, pow:i32, def:i32, name : S) {
+fn monster<S : ToString>(ecs: &mut World, x: i32, y: i32, glyph : rltk::FontCharType, hp:i32, ep:i32, pow:i32, def:i32, name : S, stance: CombatStance, attack: Attack, chase_chance: f32, ep_threshold: i32) {
     ecs.create_entity()
         .with(Position{ x, y })
         .with(Renderable{
@@ -53,39 +53,12 @@ fn monster<S : ToString>(ecs: &mut World, x: i32, y: i32, glyph : rltk::FontChar
         .with(CombatStats{ max_hp: hp, hp: hp, hp_regen:-5, max_ep: ep, ep: ep, ep_regen:-5, defense: def, power: pow, attack_cost: 5, stance: CombatStance::GuardDown, current_target: None, visible_targets: vec![] })
         .with(SmartMonster{ 
             state: SmartMonsterState::Asleep,
-            is_smart: false,
             time_in_current_state: 0,
             target_location: None,
-            primary_stance: CombatStance::GuardDown,
-            primary_attack: Attack::Melee,
-            recover_ep_threshold: 0,
-            chase_chance: 4
-        })
-        .build();
-}
-
-fn smart_monster<S : ToString>(ecs: &mut World, x: i32, y: i32, glyph : rltk::FontCharType, hp:i32, ep:i32, pow:i32, def:i32, name : S) {
-    ecs.create_entity()
-        .with(Position{ x, y })
-        .with(Renderable{
-            glyph,
-            fg: RGB::named(rltk::RED),
-            bg: RGB::named(rltk::BLACK),
-        })
-        .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
-        .with(Monster{})
-        .with(Name{ name : name.to_string() })
-        .with(BlocksTile{})
-        .with(CombatStats{ max_hp: hp, hp: hp, hp_regen:-5, max_ep: ep, ep: ep, ep_regen:-5, defense: def, power: pow, attack_cost: 5, stance: CombatStance::GuardDown, current_target: None, visible_targets: vec![] })
-        .with(SmartMonster{ 
-            state: SmartMonsterState::Asleep,
-            is_smart: true,
-            time_in_current_state: 0,
-            target_location: None,
-            primary_stance: CombatStance::GuardUp,
-            primary_attack: Attack::Melee,
-            recover_ep_threshold: 20,
-            chase_chance: 2
+            primary_stance: stance,
+            primary_attack: attack,
+            recover_ep_threshold: ep_threshold,
+            chase_chance: chase_chance
         })
         .build();
 }
