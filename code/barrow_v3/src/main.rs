@@ -186,7 +186,7 @@ fn main() -> rltk::BError {
         .unwrap()
         .with_font("vga8x16.png", 8u32, 16u32)
         .with_sparse_console(80u32, 30u32, "vga8x16.png")
-        .with_title("richard's untitled roguelike")
+        .with_title("Barrow")
         .build()?;
 
     register_palette_color("pink", RGB::named(rltk::MAGENTA));
@@ -209,6 +209,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<BlocksTile>();
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<Action>();
+    gs.ecs.register::<SmartMonster>();
 
     let map : Map = Map::new_map_rooms_and_corridors();
     let (player_x, player_y) = map.rooms[0].center();
@@ -225,7 +226,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
     gs.ecs.insert(player_entity);
     gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });
-    gs.ecs.insert(gamelog::GameLog{ entries : vec!["Welcome to richard's untitled roguelike".to_string()] });
+    gs.ecs.insert(gamelog::GameLog{ entries : vec!["Welcome to Barrow".to_string()] });
 
     rltk::main_loop(context, gs)
 }

@@ -22,6 +22,16 @@ impl<'a> System<'a> for ActionSystem {
         let (entities, player_entity, mut log, mut actions, names, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng) = data;
 
         for (entity, name, action) in (&entities, &names, &actions).join() {
+            {
+                let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
+                if subject_stats.stance == CombatStance::GuardBreak {
+                    log.entries.push(format!("#[red]{}'s guard is broken! Recovering...#[].", &name.name));
+    
+                    rest_or_default(&mut subject_stats);
+                    actions.clear();
+                    return
+                }    
+            }
             match action {
                 Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(target), .. } => {
                     let raw_damage: i32;
@@ -30,11 +40,20 @@ impl<'a> System<'a> for ActionSystem {
                     {
                         let subject_stats = combat_stats.get(entity).unwrap();
                         let target_stats = combat_stats.get(*target).unwrap();
-                        let def_adj = if target_stats.stance == CombatStance::GuardUp { 1 } else { 0 };
+                        // let def_adj = if target_stats.stance == CombatStance::GuardUp { 1 } else { 0 };
+                        let def_adj = match target_stats.stance {
+                            CombatStance::GuardUp => { 1 },
+                            CombatStance::GuardDown => { 0 },
+                            CombatStance::GuardBreak => { -2 }
+                        };
                         let eff_def = target_stats.defense + def_adj;
                         let eff_pow = subject_stats.power;
                         current_ep = subject_stats.ep;
-                        ep_cost = if subject_stats.stance == CombatStance::GuardUp { subject_stats.attack_cost + 5 } else { subject_stats.attack_cost };
+                        ep_cost = if subject_stats.stance == CombatStance::GuardUp { 
+                            subject_stats.attack_cost + 5 
+                        } else { 
+                            subject_stats.attack_cost 
+                        };
                         raw_damage = damage_formula(&mut rng,eff_pow,eff_def);
                     }
                     if current_ep < ep_cost {
@@ -68,7 +87,11 @@ impl<'a> System<'a> for ActionSystem {
                         let eff_def = target_stats.defense + def_adj;
                         let eff_pow = subject_stats.power + 1;
                         current_ep = subject_stats.ep;
-                        ep_cost = if subject_stats.stance == CombatStance::GuardUp { subject_stats.attack_cost + 15 } else { subject_stats.attack_cost + 10 };
+                        ep_cost = if subject_stats.stance == CombatStance::GuardUp { 
+                            subject_stats.attack_cost + 15 
+                        } else { 
+                            subject_stats.attack_cost + 10 
+                        };
                         raw_damage = damage_formula(&mut rng,eff_pow,eff_def);
                         ep_damage = subject_stats.attack_cost + 10;
                     }
@@ -126,7 +149,10 @@ pub fn apply_hp_damage( stats: &mut CombatStats, amount: i32) {
 }
 
 pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
-    stats.ep -= amount;
+    if stats.stance == CombatStance::GuardBreak && amount > 0 {
+    } else {
+        stats.ep -= amount;
+    }
     if stats.ep < 0 {
         stats.ep = 0;
         stats.stance = CombatStance::GuardBreak;
@@ -137,7 +163,6 @@ pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
             stats.stance = CombatStance::GuardDown;
         }
     }
-
 }
 
 pub fn damage_formula(rng: &mut rltk::RandomNumberGenerator, attacker_pow:i32, target_def:i32) -> i32 {
@@ -165,7 +190,6 @@ pub fn rest_or_default(stats: &mut CombatStats) {
     } else {
         apply_ep_damage(stats, stats.ep_regen);
     }
-
 } 
 
 pub fn delete_the_dead(ecs : &mut World) {

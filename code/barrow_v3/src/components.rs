@@ -2,7 +2,7 @@ use specs::prelude::*;
 use specs_derive::*;
 use rltk::{RGB};
 
-#[derive(Component, Debug, Clone)]
+#[derive(PartialEq, Component, Debug, Clone, Copy)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -70,5 +70,25 @@ pub struct Action {
     pub attack: Option<Attack>,
     pub target : Option<Entity>,
     pub position: Option<Position>
+}
+
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum SmartMonsterState { 
+    Asleep, 
+    Attacking, 
+    Recovering, 
+    Idle
+}
+
+#[derive(PartialEq, Component, Debug, Clone)]
+pub struct SmartMonster {
+    pub state: SmartMonsterState,
+    pub is_smart: bool,
+    pub time_in_current_state: i32,
+    pub target_location: Option<Position>,
+    pub primary_stance: CombatStance,
+    pub primary_attack: Attack,
+    pub recover_ep_threshold: i32,
+    pub chase_chance: i32 // actual chance is the inverse, 1/2, 1/4, etc.
 }
 

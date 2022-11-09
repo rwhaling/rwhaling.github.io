@@ -9,7 +9,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let entities = ecs.entities();
     let combat_stats = ecs.read_storage::<CombatStats>();
     let map = ecs.fetch::<Map>();
-    let mut combat_intent = ecs.write_storage::<Action>();
+    let mut actions = ecs.write_storage::<Action>();
 
     for (entity, _player, pos) in (&entities, &players, &mut positions).join() {
         if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1 || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { return; }
@@ -18,7 +18,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         for potential_target in map.tile_content[destination_idx].iter() {
             let target = combat_stats.get(*potential_target);
             if let Some(_target) = target {
-                combat_intent.insert(entity, Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(*potential_target), position: None }).expect("Add target failed");
+                actions.insert(entity, Action{ action_type: ActionType::Attack, attack: Some(Attack::Melee), target: Some(*potential_target), position: None }).expect("Add target failed");
                 return;
             }
         }
@@ -26,7 +26,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
         if !map.blocked[destination_idx] {
             let new_x = min(79 , max(0, pos.x + delta_x));
             let new_y = min(49, max(0, pos.y + delta_y));
-            combat_intent.insert(entity, Action{ action_type: ActionType::Move, attack:None, target: None, position: Some(Position { x: new_x, y: new_y })}).expect("Move intent failed");
+            actions.insert(entity, Action{ action_type: ActionType::Move, attack:None, target: None, position: Some(Position { x: new_x, y: new_y })}).expect("Move intent failed");
         }
     }
 }
@@ -84,7 +84,7 @@ pub fn try_select_target(selection: usize, ecs: &World) -> RunState {
 
 pub fn try_attack_current_target(attack:Attack, ecs: &World) -> RunState {
     let combat_stats = ecs.write_storage::<CombatStats>();
-    let mut combat_intent = ecs.write_storage::<Action>();
+    let mut actions = ecs.write_storage::<Action>();
     let player = ecs.read_storage::<Player>();
     let positions = ecs.read_storage::<Position>();
     let entities = ecs.entities();
@@ -97,7 +97,7 @@ pub fn try_attack_current_target(attack:Attack, ecs: &World) -> RunState {
 
                 let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(target_pos.x, target_pos.y), Point::new(player_pos.x, player_pos.y));
                 if distance < 1.5 {
-                    combat_intent.insert(player_entity, Action{ action_type: ActionType::Attack, attack:Some(attack), target: Some(target), position: None }).expect("Unable to insert attack");
+                    actions.insert(player_entity, Action{ action_type: ActionType::Attack, attack:Some(attack), target: Some(target), position: None }).expect("Unable to insert attack");
                     return RunState::PlayerTurn
                 } else {
                     // console::log(format!("distance to target {:?} is {}, can't attack", target, distance));
@@ -116,6 +116,7 @@ pub fn try_attack_current_target(attack:Attack, ecs: &World) -> RunState {
 pub fn try_stance_switch(ecs: &World) -> RunState {
     let players = ecs.read_storage::<Player>();
     let mut combat_stats = ecs.write_storage::<CombatStats>();
+    // TODO: can this work as an action, while still returning RunState::AwaitingInput?
 
     for (_player, stats) in (&players, &mut combat_stats).join() {
         match stats.stance {
@@ -134,10 +135,10 @@ pub fn try_stance_switch(ecs: &World) -> RunState {
 pub fn rest(ecs: &mut World) -> RunState {
     let entities = ecs.entities();
     let players = ecs.read_storage::<Player>();
-    let mut combat_intent = ecs.write_storage::<Action>();
+    let mut actions = ecs.write_storage::<Action>();
     
     for (entity, _player) in (&entities, &players).join() {
-        combat_intent.insert(entity, Action{ action_type: ActionType::Wait, attack: None, target:None, position: None }).expect("Rest failed");
+        actions.insert(entity, Action{ action_type: ActionType::Wait, attack: None, target:None, position: None }).expect("Rest failed");
     }
 
     return RunState::PlayerTurn
