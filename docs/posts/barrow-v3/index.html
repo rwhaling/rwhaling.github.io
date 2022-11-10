@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>
+         Barrow, v3
+        
+    </title>
+    
+
+    
+         <link rel="icon" type="image/png" href=&#x2F;icon&#x2F;favicon.png />
+    
+
+    
+
+    
+
+    
+
+    
+    
+        <script src=https://whaling.dev/js/feather.min.js></script>
+    
+
+
+    
+        <link href=https://whaling.dev/css/fonts.css rel="stylesheet" />
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://whaling.dev/css/main.css />
+
+    
+        <link
+            rel="stylesheet"
+            id="darkModeStyle"
+            type="text/css"
+            href=https://whaling.dev/css/dark.css
+            
+            
+                disabled
+            
+        />
+    
+
+
+    
+
+
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main" id="main_title">
+        <a href=https:&#x2F;&#x2F;whaling.dev></a>
+    </div>
+
+    <nav>
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme()" href=""></a>
+            <script src=https://whaling.dev/js/themetoggle.js></script>
+        
+    </nav>
+</header>
+
+
+        
+    
+<main>
+    <article>
+        <div class="title">
+            <h1 class="title">Barrow, v3</h1>
+            <div class="meta">
+                
+                on  2022-11-09
+
+                
+            </div>
+        </div>
+
+        
+
+        <section class="body">
+            <p>No longer untitled - I'm calling the WIP game &quot;Barrow&quot;, which I suppose is Tolkien-inspired, but also generally evocative of the experience of exploring a dark and ancient stone tomb.</p>
+<p>Try it:</p>
+<p><canvas id="canvas" width="800" height="600"></canvas></p>
+<script src="./wasm/barrow_v3.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+    await wasm_bindgen("./wasm/barrow_v3_bg.wasm");
+    });
+</script>
+<p>What is it about?  Barrow is a roguelike with a traditional lineage, focused on an old-school dungeon crawl, and an emphasis on tactical combat.  Barrow allows bump-to-attack gameplay, but it will punish you for it - you can win a fight against the weakest enemies, goblins, by mindlessly attacking, but the stronger enemies demand use of five more advanced combat strategies:</p>
+<ul>
+<li>power attacks to deplete the opponents health and stamina faster</li>
+<li>swapping stances to keep your guard up and deflect more damage</li>
+<li>waiting for the opponent to deplete their stamina, and conserving your own</li>
+<li>breaking the opponent's guard by depleting their stamina to 0</li>
+<li>taking advantage of the opponents broken guard to rapidly finish them off</li>
+</ul>
+<p>As it stands right now, all of these mechanisms are implemented and working, and the game is playable, but it needs more balancing; it also needs a lot of UI love to make these mechanisms visible and intuitive, which is the biggest gap right now.  I did a first pass to make the monster AI a little more dynamic, but there's a lot more to be done on that front as well.</p>
+<p>What I'm proudest of right now is the graphics, and especially the lighting/visiblity rendering - I made a flickering light effect using RLTK's lovely noise module - I think this is simplex noise, not perlin noise, but it's pretty either way:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>            </span><span style="color:#b48ead;">let</span><span> distance = rltk::DistanceAlg::Pythagoras.</span><span style="color:#96b5b4;">distance2d</span><span>(Point::new(x, y), player_pos);
+</span><span>            </span><span style="color:#b48ead;">let</span><span> dist_factor = </span><span style="color:#d08770;">1.0 </span><span>- ((distance - </span><span style="color:#d08770;">3.0</span><span>).</span><span style="color:#96b5b4;">max</span><span>(</span><span style="color:#d08770;">0.0</span><span>)/ </span><span style="color:#d08770;">9.0</span><span>) - (noise.</span><span style="color:#96b5b4;">get_noise3d</span><span>(</span><span style="color:#d08770;">0.08 </span><span>* x as </span><span style="color:#b48ead;">f32</span><span>, </span><span style="color:#d08770;">0.08 </span><span>* y as </span><span style="color:#b48ead;">f32</span><span>, </span><span style="color:#d08770;">0.14 </span><span>* map.frame_count as </span><span style="color:#b48ead;">f32</span><span>) * </span><span style="color:#d08770;">0.1</span><span>);
+</span><span>
+</span><span>            </span><span style="color:#b48ead;">match</span><span> tile {
+</span><span>                TileType::Floor =&gt; {
+</span><span>                    glyph = rltk::to_cp437(&#39;</span><span style="color:#a3be8c;">.</span><span>&#39;);
+</span><span>                    fg = </span><span style="color:#d08770;">RGB</span><span>::from_f32(
+</span><span>                        </span><span style="color:#d08770;">0.25 </span><span>* dist_factor, 
+</span><span>                        </span><span style="color:#d08770;">0.2 </span><span>* dist_factor, 
+</span><span>                        </span><span style="color:#d08770;">0.15 </span><span>* dist_factor
+</span><span>                    );
+</span><span>                    bg = </span><span style="color:#d08770;">RGB</span><span>::from_f32(
+</span><span>                        dist_factor * </span><span style="color:#d08770;">0.1</span><span>,
+</span><span>                        dist_factor * </span><span style="color:#d08770;">0.07</span><span>,
+</span><span>                        dist_factor * </span><span style="color:#d08770;">0.05</span><span>);
+</span><span>                }
+</span><span>                TileType::Wall =&gt; {
+</span><span>                    glyph = rltk::to_cp437(&#39;</span><span style="color:#a3be8c;">#</span><span>&#39;);
+</span><span>                    fg = </span><span style="color:#d08770;">RGB</span><span>::from_f32(
+</span><span>                        dist_factor * (</span><span style="color:#d08770;">0.5 </span><span>+ </span><span style="color:#d08770;">0.08 </span><span>* (noise.</span><span style="color:#96b5b4;">get_noise</span><span>(</span><span style="color:#d08770;">500.0 </span><span>+ x as </span><span style="color:#b48ead;">f32</span><span>, </span><span style="color:#d08770;">800.0 </span><span>+ y as </span><span style="color:#b48ead;">f32</span><span>)) ), 
+</span><span>                        dist_factor * (</span><span style="color:#d08770;">0.5 </span><span>+ </span><span style="color:#d08770;">0.08 </span><span>* (noise.</span><span style="color:#96b5b4;">get_noise</span><span>(</span><span style="color:#d08770;">500.0 </span><span>+ x as </span><span style="color:#b48ead;">f32</span><span>, </span><span style="color:#d08770;">800.0 </span><span>+ y as </span><span style="color:#b48ead;">f32</span><span>)) ),
+</span><span>                        dist_factor * (</span><span style="color:#d08770;">0.5 </span><span>+ </span><span style="color:#d08770;">0.08 </span><span>* (noise.</span><span style="color:#96b5b4;">get_noise</span><span>(</span><span style="color:#d08770;">500.0 </span><span>+ x as </span><span style="color:#b48ead;">f32</span><span>, </span><span style="color:#d08770;">800.0 </span><span>+ y as </span><span style="color:#b48ead;">f32</span><span>)) )
+</span><span>                    );
+</span><span>                    bg = </span><span style="color:#d08770;">RGB</span><span>::from_f32(</span><span style="color:#d08770;">0.15</span><span>,</span><span style="color:#d08770;">0.1</span><span>,</span><span style="color:#d08770;">0.0</span><span>);
+</span><span>                }
+</span><span>            }
+</span></code></pre>
+<p>This was also the first time I've really hit a roadblock because of Rust's borrow checker.  As part of implementing the new game logic, I merged Wolverson's <code>MeleeCombatSystem</code> and <code>DamageSystem</code> into a single <code>ActionSystem</code> that would apply all the combat rules in a single pass; but what I found is that Rust's borrow checker wouldn't permit me to borrow mutable references to two items in the same vector; in particular, if I need to borrow both the players stats struct as well as the target monsters stats from the same <code>CombatStats</code> Storage (which is an abstraction over a sparse vector, hashmap, etc.) then I end up having two mutable borrows of the storage object itself.</p>
+<p>The workaround wasn't that bad, just unintuitive - I had to do the borrows separately in bare blocks so they aren't in the same scope:</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#c0c5ce;" class="language-rust "><code class="language-rust" data-lang="rust"><span>                        log.entries.</span><span style="color:#96b5b4;">push</span><span>(format!(&quot;</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hits #[orange]</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;">#[] fiercely for #[orange]</span><span style="color:#d08770;">{}</span><span style="color:#a3be8c;"> hp#[].</span><span>&quot;, &amp;name.name, &amp;target_name.name, raw_damage));
+</span><span>                        {
+</span><span>                            </span><span style="color:#b48ead;">let</span><span> subject_stats = combat_stats.</span><span style="color:#96b5b4;">get_mut</span><span>(entity).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                            </span><span style="color:#96b5b4;">apply_ep_damage</span><span>(subject_stats,ep_cost);
+</span><span>                        }
+</span><span>                        {
+</span><span>                            </span><span style="color:#b48ead;">let</span><span> target_stats = combat_stats.</span><span style="color:#96b5b4;">get_mut</span><span>(*target).</span><span style="color:#96b5b4;">unwrap</span><span>();
+</span><span>                            </span><span style="color:#96b5b4;">apply_hp_damage</span><span>(target_stats, raw_damage);
+</span><span>                            </span><span style="color:#96b5b4;">apply_ep_damage</span><span>(target_stats, ep_damage);
+</span><span>                        }
+</span></code></pre>
+<p>I'm still on the fence about Rust conceptually - it's just not 100% clear to me how much Rust's borrow checker is actually intrusive, and how many legitimate design patterns it gets in the way of.  <a href="https://rust-unofficial.github.io/too-many-lists/index.html">Doubly linked lists</a> are the classic example, and maybe I am starting to understand Rust well enough to read through that book.</p>
+<p>Anyhow - the other big thing missing from Barrow right now is audio, which I don't think RLTK supports at all - that might entail porting it to Bevy or another framework, we'll see, but in the meantime I might want to change it up and work on a few audio projects.</p>
+
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+
+        <footer>
+  <div style="display:flex">
+    
+        <a class="soc" href=https:&#x2F;&#x2F;github.com&#x2F;richardwhaling title=GitHub>
+            <i data-feather=github></i>
+        </a>
+    
+  </div>
+  <div class="footer-info">
+    2022 © richard whaling | <a
+      href="https://github.com/XXXMrG/archie-zola">Archie-Zola Theme</a>
+  </div>
+</footer>
+
+
+<script>
+    feather.replace();
+</script>
+
+
+    </div>
+</body>
+
+</html>

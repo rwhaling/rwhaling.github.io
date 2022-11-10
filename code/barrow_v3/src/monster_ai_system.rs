@@ -1,8 +1,6 @@
 use specs::prelude::*;
 use super::{Viewshed, Monster, Map, Position, Action, ActionType, GameLog, CombatStats, RunState, SmartMonster};
 use rltk::{Point};
-// use rltk::console;
-
 
 pub struct MonsterAI {}
 
@@ -34,11 +32,11 @@ impl<'a> System<'a> for MonsterAI {
             stats.visible_targets.clear();                    
 
             if smart_monster.target_location == Some(*pos) {
-                log.entries.push(format!("{:?} reached destination, giving up", entity));
+                // log.entries.push(format!("{:?} reached destination, giving up", entity));
                 smart_monster.target_location = None;
             }
             if viewshed.visible_tiles.contains(&player_pos) {
-                log.entries.push(format!("{:?} can see you", entity));
+                // log.entries.push(format!("{:?} can see you", entity));
                 smart_monster.target_location = Some(Position { x: player_pos.x, y: player_pos.y});
                 stats.current_target = Some(*player_entity);
                 stats.visible_targets.push(*player_entity);

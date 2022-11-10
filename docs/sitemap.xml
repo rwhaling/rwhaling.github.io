@@ -11,7 +11,14 @@
         <loc>https://whaling.dev/page/1/</loc>
     </url>
     <url>
+        <loc>https://whaling.dev/page/2/</loc>
+    </url>
+    <url>
         <loc>https://whaling.dev/posts/</loc>
+    </url>
+    <url>
+        <loc>https://whaling.dev/posts/barrow-v3/</loc>
+        <lastmod>2022-11-09</lastmod>
     </url>
     <url>
         <loc>https://whaling.dev/posts/hello-world/</loc>
