@@ -4,7 +4,7 @@ date = "2022-11-12"
 description = "First attempt to embed a rust WebAssembly program into the blog via an iframe"
 +++
 
-Well, here we go again: no idea what platforms this will work on, but the below should be the UI for a simple Mas/MSP generative pentatonic patch embedded via RNBO:
+Well, here we go again: no idea what platforms this will work on, but the below should be the UI for a simple Max/MSP generative pentatonic patch embedded via RNBO:
 
 <svg id="background" width="100%" height="100%"></svg>
 <div id="rnbo-root">
@@ -65,9 +65,9 @@ This is the patch below - it's very simple, playing random notes in a pentatonic
 
 <img src="/imgs/rnbo_test_1_screenshot.png"/>
 
-The synth sound is an adjustable asymmetric triangle oscillator `tri~` running into `tanh~` for warm overdrive, and then into a modeled buchla-style low-pass-gate from the standard library: `sbb.env.lpg`.  I can't understate how *good* this lpg sounds - it's kind of a game changer, I've never made something this simple with Max that sounds reasonably presentable.  The other piece of this is the very simple delay and a plate reverb that is copypasta'd from the RNBO guitar pedals collection - and again, I feel like this is the first reverb I've ever heard in max that sounds decent.
+The synth sound is an adjustable asymmetric triangle oscillator `tri~` running into `tanh~` for warm overdrive, and then into a modeled buchla-style low-pass-gate from the standard library: `sbb.env.lpg`.  I can't understate how *good* this lpg sounds - it's kind of a game changer, I've never made something this simple with Max that sounds this presentable.  The other piece of this is the very simple delay and a plate reverb that is copypasta'd from the RNBO guitar pedals collection - and again, I feel like this is the first reverb I've ever heard in max that sounds nice.
 
-Until this, I'd always had to rely on Ableton or hardware synthesizers to make things sound nice, even if I was running the actual generative algorithms in Max.  But I also found myself really struggling with Max, especially with larger pieces - Max4Live does really weird stuff if you run multiple instances of the same patch, and it really interfered with every attempt I made to design abstractions.  RNBO seems to fix a lot of the abstraction issues as well, and to have a very principled approach to defining parameters at the top-level, and bubbling them up from embedded sub-patchers.
+Until now, I'd always had to rely on Ableton or hardware synthesizers to make things sound nice, even if I was running the actual generative algorithms in Max.  But I also found myself really struggling with Max, especially with larger pieces - Max4Live does really weird stuff if you run multiple instances of the same patch, and it really interfered with every attempt I made to design abstractions.  RNBO seems to fix a lot of the abstraction issues as well, and to have a very principled approach to defining parameters at the top-level, and bubbling them up from embedded sub-patchers.
 
 I'll write more about the generative techniques and design patterns as I keep iterating on this.  The other giant question for me is how things interface at the webassembly/WebAudio layer, which I am completely ignorant about at the moment.  The "moonshot" for me would be to have a Rust program sending MIDI events into a RNBO patch in the same browser window, which opens up a huge range of possibilities - but I'd also settle for just controlling this kind of patch with p5.js or something like that.
 
