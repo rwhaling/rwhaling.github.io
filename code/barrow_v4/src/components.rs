@@ -52,7 +52,8 @@ pub struct CombatStats {
     pub attack_cost: i32,
     pub stance : CombatStance,
     pub visible_targets: Vec<Entity>,
-    pub current_target : Option<Entity>
+    pub current_target : Option<Entity>,
+    pub last_command : Option<Command>
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -62,7 +63,7 @@ pub enum ActionType { Move, Wait, Attack }
 pub enum AttackMove { Melee, Slash, Smash, Bash, Poke }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
-pub enum WaitMove { Wait, Defend, Block }
+pub enum WaitMove { Wait, Fend, Block, Brace }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Command {
@@ -75,10 +76,11 @@ pub enum Command {
 pub struct MenuCommand {
     pub command: Command,
     pub cost: i32,
-    pub stance_after: CombatStance
+    pub stance_after: CombatStance,
+    pub enabled: bool
 }
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Copy)]
 pub struct Action {
     pub command: Command,
     pub cost: i32,

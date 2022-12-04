@@ -98,17 +98,47 @@ pub fn try_select_target(selection: usize, ecs: &World) -> RunState {
 }
 
 pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
-    match player_stats.stance {
-        _ => {
+    let moves = match player_stats.stance {
+        Ready => {
             return vec![
-                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready },
-                MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power },
-                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready },
-                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard }
+                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: true },
+                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: true }
+            ]        
+        },
+        Power => {
+            return vec![
+                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
+                MenuCommand { command: AttackCommand(Slash), cost: 10, stance_after: Power, enabled: true },
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: WaitCommand(Brace), cost: -5, stance_after: Power, enabled: true }
+            ]        
+        },
+        Guard => {
+            return vec![
+                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Poke), cost: 10, stance_after: Guard, enabled: true },
+                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: true }
+            ]        
+        },
+        Stun => {
+            return vec![
+                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: false },
+                MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: false },
+                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: false },
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: false },
+                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: false }
             ]        
         }
-    }
+    };
+    // todo: enable/disable based on ep
+    // todo: wait/block/defend based on ep
+    return moves
 }
 
 pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {

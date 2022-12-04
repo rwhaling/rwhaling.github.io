@@ -27,37 +27,56 @@ impl<'a> System<'a> for ActionSystem {
         let (entities, player_entity, mut log, mut actions, names, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng) = data;
 
         for (entity, name, action) in (&entities, &names, &actions).join() {
+            let eff_action: Action;
             {
+                // Check here for any conditions that would override the selected action
                 let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                 if subject_stats.stance == Stun {
-                    log.entries.push(format!("#[red]{} is stunned! Recovering...#[].", &name.name));
-    
-                    rest_or_default(&mut subject_stats);
-                    actions.clear();
-                    return
+                    log.entries.push(format!("#[red]{} is stunned#[], recovering...", &name.name));
+                    let a = &Action { command: WaitCommand(Wait), cost: -5, stance_after: subject_stats.stance, target: None, position: None };
+                    eff_action = *a;
+                    // return
                 }    
+                else if action.cost > subject_stats.ep {
+                    log.entries.push(format!("#[yellow]{}#[] has insufficient ep, recovering...", &name.name));    
+                    let a = &Action { command: WaitCommand(Wait), cost: -5, stance_after: subject_stats.stance, target: None, position: None };
+                    eff_action = *a;
+                    // return
+                } else {
+                    eff_action = *action;
+                }
             }
-            match action {
+            match &eff_action {
+                // possibly fully refactor each of these into its own fn?
                 Action{ command: AttackCommand(a), target: Some(target), cost: ep_cost, .. } => {
                     let subject_stats = combat_stats.get(entity).unwrap();
                     let target_stats = combat_stats.get(*target).unwrap();
                     let target_stance = target_stats.stance;
+                    let target_last_command = target_stats.last_command;
                     let pow_adj = match (a,target_stance) {
-                        (Melee, Guard) => { -1 },
-                        (Melee, _ ) => { 0 },
-                        (Slash, Guard) => { 0 },
-                        (Slash, _ ) => { 2 },
-                        (Smash, Guard) => { 1 },
-                        (Smash, _ ) => { 3 },
-                        (Bash, _ ) => { -1 },
-                        (Poke, _ ) => { -1 }
+                        (Melee, Guard) => -1,
+                        (Melee, _ ) => 0,
+                        (Slash, Guard) => 0,
+                        (Slash, _ ) => 2,
+                        (Smash, Guard) => 1,
+                        (Smash, _ ) => 3 ,
+                        (Bash, _ ) => -1,
+                        (Poke, _ ) => -1 
                     };                    
-                    let eff_def = target_stats.defense;
                     let eff_pow = subject_stats.power + pow_adj;
+                    let def_adj = match (a, target_last_command) {
+                        // TODO: fill out
+                        (_, Some(WaitCommand(Block))) => 2,
+                        (Smash, Some(WaitCommand(Fend))) => 2,
+                        (_, Some(WaitCommand(Fend))) => 1,
+                        (_, _) => 0 
+                    };
+                    let eff_def = target_stats.defense + def_adj;
                     let raw_damage = damage_formula(&mut rng, eff_pow, eff_def);
                     let current_ep = subject_stats.ep;
                     let target_name = names.get(*target).unwrap();
-                    let ep_damage = match (a,target_stance) {
+
+                    let attack_ep_damage = match (a,target_stance) {
                         (Melee, Guard) => 5,
                         (Slash, Guard) => 5,
                         (Smash, Guard) => 10,
@@ -67,32 +86,38 @@ impl<'a> System<'a> for ActionSystem {
                         (Poke, Guard) => 5,
                         (_, _) => 0
                     };
-                    if ep_cost > &current_ep {
-                        let subject_stats = combat_stats.get_mut(entity).unwrap(); 
+
+                    let reaction_ep_damage = match (a, target_last_command) {
+                        // TODO: fill out
+                        (_, Some(WaitCommand(Block))) => 5,
+                        (_, Some(WaitCommand(Fend))) => 10,
+                        (_, _) => 0
+                    };
+
+                    let ep_damage = attack_ep_damage + reaction_ep_damage;
+
+                    log.entries.push(format!("{} hits #[orange]{}#[] for #[orange]{} hp#[].", &name.name, &target_name.name, raw_damage));
+                    {
+                        let subject_stats = combat_stats.get_mut(entity).unwrap();
+                        apply_ep_damage(subject_stats,*ep_cost);
                         subject_stats.stance = action.stance_after;
-                        rest_or_default( subject_stats);
-                    } else {
-                        log.entries.push(format!("{} hits #[orange]{}#[] for #[orange]{} hp#[].", &name.name, &target_name.name, raw_damage));
-                        {
-                            let subject_stats = combat_stats.get_mut(entity).unwrap();
-                            apply_ep_damage(subject_stats,*ep_cost);
-                            subject_stats.stance = action.stance_after;
-                        }
-                        {
-                            let target_stats = combat_stats.get_mut(*target).unwrap();
-                            apply_hp_damage(target_stats, raw_damage);
-                            apply_ep_damage(target_stats, ep_damage);
-                        }
+                        subject_stats.last_command = Some(AttackCommand(*a));
+                    }
+                    {
+                        let target_stats = combat_stats.get_mut(*target).unwrap();
+                        apply_hp_damage(target_stats, raw_damage);
+                        apply_ep_damage(target_stats, ep_damage);
                     }
                 }
 
-                Action{ command: WaitCommand(w), target: None, .. } => {
+                Action{ command: WaitCommand(w), target: None, cost: ep_cost, .. } => {
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                     // TODO: wait move ep recovery
-                    rest_or_default(&mut subject_stats);
+                    rest_or_default(&mut subject_stats, *w, *ep_cost);
                     if subject_stats.stance != Stun {
                         subject_stats.stance = action.stance_after;
                     }
+                    subject_stats.last_command = Some(WaitCommand(*w));
 
                 }
                 Action{ command: MoveCommand, target: None, position: Some(Position {x,y}), .. } => {
@@ -108,9 +133,10 @@ impl<'a> System<'a> for ActionSystem {
                     viewshed.dirty = true;
 
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
-                    // TODO: move ep regen
+                    // TODO: move ep regen?
                     move_regen(&mut subject_stats);
                     subject_stats.stance = action.stance_after;
+                    subject_stats.last_command = Some(MoveCommand);
                 }
                 _ => {
                     log.entries.push(format!("Anomaly: {} has an incoherent intent", name.name));
@@ -163,7 +189,7 @@ pub fn move_regen(stats: &mut CombatStats) {
     }
 }
 
-pub fn rest_or_default(stats: &mut CombatStats) {
+pub fn rest_or_default(stats: &mut CombatStats, wait_move: WaitMove, cost: i32) {
     if stats.stance == CombatStance::Guard { return; };
     if stats.current_target == None {
         apply_hp_damage(stats, stats.hp_regen);
@@ -197,7 +223,6 @@ pub fn delete_the_dead(ecs : &mut World) {
                         let mut runstate = ecs.write_resource::<RunState>();
                         if *runstate != RunState::GameOver {
                             log.entries.push(format!("#[red]You died! #[pink]Press ESCAPE to return to the menu."));
-
                             *runstate = RunState::GameOver;
                         }
                     }
