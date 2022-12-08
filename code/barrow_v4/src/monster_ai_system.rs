@@ -48,21 +48,40 @@ impl<'a> System<'a> for MonsterAI {
                 stats.current_target = None;
             }
     
+            // TODO: handle Stun properly
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), player_pos);
             if distance < 1.5 {
                 if stats.ep >= smart_monster.recover_ep_threshold {
                     actions.insert(entity, Action{ 
                         command: AttackCommand(smart_monster.primary_attack),
-                        cost: 15, // TODO differentiate
+                        cost: smart_monster.primary_attack_cost,
                         stance_after: smart_monster.primary_stance,
                         target: Some(*player_entity), 
                         position: None 
                     }).expect("Unable to insert attack");
+                } else if stats.ep >= smart_monster.primary_attack_cost {
+                    let dice_roll = rng.range(0.0,1.0);
+                    if dice_roll < smart_monster.recover_ep_chance { 
+                        actions.insert(entity, Action{ 
+                            command: WaitCommand(Wait),
+                            cost: -10,
+                            stance_after: smart_monster.primary_stance,
+                            target:None, 
+                            position: None 
+                        }).expect("Unable to insert move");
+                    } else {
+                        actions.insert(entity, Action{ 
+                            command: AttackCommand(smart_monster.primary_attack),
+                            cost: smart_monster.primary_attack_cost,
+                            stance_after: smart_monster.primary_stance,
+                            target: Some(*player_entity), 
+                            position: None 
+                        }).expect("Unable to insert attack");        
+                    }
                 } else {
                     actions.insert(entity, Action{ 
-                        // action_type:ActionType::Wait, attack:None, 
                         command: WaitCommand(Wait),
-                        cost: -5,
+                        cost: -10,
                         stance_after: smart_monster.primary_stance,
                         target:None, 
                         position: None 
@@ -91,7 +110,7 @@ impl<'a> System<'a> for MonsterAI {
                     actions.insert(entity, Action{ 
                         // action_type:ActionType::Wait, attack:None, 
                         command: WaitCommand(Wait),
-                        cost: 0,
+                        cost: -10,
                         stance_after: Ready,
                         target:None, 
                         position: None 
@@ -104,8 +123,8 @@ impl<'a> System<'a> for MonsterAI {
                     map.xy_idx(targ_loc.x, targ_loc.y),
                     &mut *map
                 );
-                let dice_roll = rng.range(0.0,smart_monster.chase_chance);
-                if path.success && path.steps.len()>1 && dice_roll < smart_monster.chase_chance {
+                let dice_roll = rng.range(0.0,1.0);
+                if path.success && path.steps.len()>1 && dice_roll < smart_monster.invisible_chase_chance {
                     let idx = map.xy_idx(pos.x, pos.y);
                     map.blocked[idx] = false;
                     let new_x = path.steps[1] as i32 % map.width;
@@ -122,7 +141,7 @@ impl<'a> System<'a> for MonsterAI {
                     actions.insert(entity, Action{ 
                         // action_type:ActionType::Wait, attack:None, 
                         command: WaitCommand(Wait),
-                        cost: 0,
+                        cost: -10,
                         stance_after: smart_monster.primary_stance,
                         target:None, 
                         position: None 
@@ -133,7 +152,7 @@ impl<'a> System<'a> for MonsterAI {
                 actions.insert(entity, Action{ 
                     // action_type:ActionType::Wait, attack:None, 
                     command: WaitCommand(Wait),
-                    cost: 0,
+                    cost: -10,
                     stance_after: Ready,
                     target:None, 
                     position: None 

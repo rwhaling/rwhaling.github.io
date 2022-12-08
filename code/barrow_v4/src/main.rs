@@ -41,10 +41,10 @@ impl State {
         vis.run_now(&self.ecs);
         let mut mob = MonsterAI{};
         mob.run_now(&self.ecs);
-        let mut mapindex = MapIndexingSystem{};
-        mapindex.run_now(&self.ecs);
         let mut melee = ActionSystem{};
         melee.run_now(&self.ecs);
+        let mut mapindex = MapIndexingSystem{};
+        mapindex.run_now(&self.ecs);
         self.ecs.maintain();
     }
 

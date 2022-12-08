@@ -33,13 +33,15 @@ impl<'a> System<'a> for ActionSystem {
                 let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                 if subject_stats.stance == Stun {
                     log.entries.push(format!("#[red]{} is stunned#[], recovering...", &name.name));
-                    let a = &Action { command: WaitCommand(Wait), cost: -5, stance_after: subject_stats.stance, target: None, position: None };
+                    // TODO: use proper command/regen
+                    let a = &Action { command: WaitCommand(Wait), cost: -10, stance_after: subject_stats.stance, target: None, position: None };
                     eff_action = *a;
                     // return
                 }    
                 else if action.cost > subject_stats.ep {
                     log.entries.push(format!("#[yellow]{}#[] has insufficient ep, recovering...", &name.name));    
-                    let a = &Action { command: WaitCommand(Wait), cost: -5, stance_after: subject_stats.stance, target: None, position: None };
+                    // TODO: user proper command/regen
+                    let a = &Action { command: WaitCommand(Wait), cost: -10, stance_after: subject_stats.stance, target: None, position: None };
                     eff_action = *a;
                     // return
                 } else {
@@ -59,15 +61,15 @@ impl<'a> System<'a> for ActionSystem {
                         (Slash, Guard) => 0,
                         (Slash, _ ) => 2,
                         (Smash, Guard) => 1,
-                        (Smash, _ ) => 3 ,
+                        (Smash, _ ) => 3,
                         (Bash, _ ) => -1,
-                        (Poke, _ ) => -1 
+                        (Poke, _ ) => -1
                     };                    
                     let eff_pow = subject_stats.power + pow_adj;
                     let def_adj = match (a, target_last_command) {
                         // TODO: fill out
-                        (_, Some(WaitCommand(Block))) => 2,
-                        (Smash, Some(WaitCommand(Fend))) => 2,
+                        (_, Some(WaitCommand(Block))) => 3,
+                        (Smash, Some(WaitCommand(Fend))) => 3,
                         (_, Some(WaitCommand(Fend))) => 1,
                         (_, _) => 0 
                     };
@@ -80,7 +82,7 @@ impl<'a> System<'a> for ActionSystem {
                         (Melee, Guard) => 5,
                         (Slash, Guard) => 5,
                         (Smash, Guard) => 10,
-                        (Smash, _) => 5,
+                        (Smash, _) => 10,
                         (Bash, Guard) => 15,
                         (Bash, _) => 10,
                         (Poke, Guard) => 5,
@@ -90,7 +92,7 @@ impl<'a> System<'a> for ActionSystem {
                     let reaction_ep_damage = match (a, target_last_command) {
                         // TODO: fill out
                         (_, Some(WaitCommand(Block))) => 5,
-                        (_, Some(WaitCommand(Fend))) => 10,
+                        (_, Some(WaitCommand(Fend))) => 0,
                         (_, _) => 0
                     };
 
@@ -156,19 +158,18 @@ pub fn apply_hp_damage( stats: &mut CombatStats, amount: i32) {
 }
 
 pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
-    if stats.stance == CombatStance::Stun && amount > 0 {
+    if stats.stance == CombatStance::Stun {
+        stats.ep = 0;
+        // TODO: fix, this isn't right for monsters
+        stats.stance = CombatStance::Ready;
     } else {
         stats.ep -= amount;
     }
     if stats.ep < 0 {
-        stats.ep = 0;
         stats.stance = CombatStance::Stun;
-    }
+    } 
     if stats.ep >= stats.max_ep {
         stats.ep = stats.max_ep;
-        if stats.stance == CombatStance::Stun {
-            stats.stance = CombatStance::Ready;
-        }
     }
 }
 
@@ -190,12 +191,12 @@ pub fn move_regen(stats: &mut CombatStats) {
 }
 
 pub fn rest_or_default(stats: &mut CombatStats, wait_move: WaitMove, cost: i32) {
-    if stats.stance == CombatStance::Guard { return; };
+    // if stats.stance == CombatStance::Guard { return; };
     if stats.current_target == None {
         apply_hp_damage(stats, stats.hp_regen);
-        apply_ep_damage(stats, stats.ep_regen);
+        apply_ep_damage(stats, cost);
     } else {
-        apply_ep_damage(stats, stats.ep_regen);
+        apply_ep_damage(stats, cost);
     }
 } 
 

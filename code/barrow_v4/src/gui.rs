@@ -30,8 +30,16 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
 
     let mut target_offset = 1;
     let mut gui_offset = 1;
+
+    let mouse_pos = ctx.mouse_pos();
+
     ctx.set_active_console(1);
     ctx.cls();
+    let menu_mouse_pos = ctx.mouse_pos();
+    let menu_y = menu_mouse_pos.1;
+    let draw_popup = false;
+    let mut info_popup = String::from("");
+
     for (_player, stats) in (&players, &combat_stats).join() {
         let health = format!("hp:{}/{} ", stats.hp, stats.max_hp);
         let name = format!("Player");
@@ -60,11 +68,18 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                         ctx.draw_bar_horizontal(63, 4 + gui_offset, 16, monster_stats.ep, monster_stats.max_ep, RGB::named(rltk::BLUE), RGB::named(rltk::BLACK));
                         let energy = format!("ep:{}/{} ", monster_stats.ep, monster_stats.max_ep);
                         ctx.print_color(67, 4 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
+
+                        if menu_y == 3 + gui_offset || menu_y == 4 + gui_offset {
+                            info_popup = format!("{}",name.name);
+                        }
                         target_offset += 1;
                         gui_offset += 2;
                     } else {
                         let target_string = format!("{} {}", target_offset, name.name);
-                        ctx.print(51, 3 + gui_offset, target_string);    
+                        ctx.print(51, 3 + gui_offset, target_string);
+                        if menu_y == 3 + gui_offset {
+                            info_popup = format!("{}",name.name);
+                        }
                         target_offset += 1;
                         gui_offset += 1;
                     }
@@ -76,13 +91,30 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
         ctx.print(51, 6 + gui_offset, format!("--------                 "));
         ctx.print(51, 7 + gui_offset, format!("(ASDW) Move              "));
         ctx.print(51, 8 + gui_offset, format!("(QEZC) Diag. Move        "));
-        let moves : Vec<MenuCommand> = get_available_moves(&stats);
-        ctx.print(51, 9 + gui_offset, format!("(J) {}       ", print_command(&get_available_moves(&stats)[0])));
-        ctx.print(51, 10 + gui_offset, format!("(K) {}       ", print_command(&get_available_moves(&stats)[1])));
-        ctx.print(51, 11 + gui_offset, format!("(L) {}       ", print_command(&get_available_moves(&stats)[2])));
-        ctx.print(51, 12 + gui_offset, format!("(N) {}       ", print_command(&get_available_moves(&stats)[3])));
-        ctx.print(51, 13 + gui_offset, format!("(M) {}       ", print_command(&get_available_moves(&stats)[4])));
 
+        let moves : Vec<MenuCommand> = get_available_moves(&stats);
+        ctx.print(51, 9 + gui_offset, format!("(J) {}       ", print_command(&moves[0])));
+        if menu_y == 9 + gui_offset {
+            info_popup = print_command(&moves[0]);
+        }
+        ctx.print(51, 10 + gui_offset, format!("(K) {}       ", print_command(&moves[1])));
+        if menu_y == 10 + gui_offset {
+            info_popup = print_command(&moves[1]);
+        }
+        ctx.print(51, 11 + gui_offset, format!("(L) {}       ", print_command(&moves[2])));
+        if menu_y == 11 + gui_offset {
+            info_popup = print_command(&moves[2]);
+        }
+
+        ctx.print(51, 12 + gui_offset, format!("(N) {}       ", print_command(&moves[3])));
+        if menu_y == 12 + gui_offset {
+            info_popup = print_command(&moves[3]);
+        }
+
+        ctx.print(51, 13 + gui_offset, format!("(M) {}       ", print_command(&moves[4])));
+        if menu_y == 13 + gui_offset {
+            info_popup = print_command(&moves[4]);
+        }
 
     }
     // ctx.target(0);
@@ -102,9 +134,17 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
     ctx.set_active_console(0);
 
     // Draw mouse cursor
-    let mouse_pos = ctx.mouse_pos();
     ctx.set_bg(mouse_pos.0, mouse_pos.1, RGB::named(rltk::MAGENTA));
     draw_tooltips(ecs, ctx);
+
+    ctx.set_active_console(1);
+
+    // Draw mouse cursor
+    if menu_mouse_pos.0 > 50 && info_popup != String::from("") {
+        ctx.set_bg(menu_mouse_pos.0, menu_mouse_pos.1, RGB::named(rltk::MAGENTA));
+        ctx.draw_box(8,1,34,18,rltk::WHITE,rltk::BLACK);
+        ctx.print_color(9,2, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), info_popup);
+    }
 }
 
 fn print_command(command: &MenuCommand) -> String {
@@ -171,19 +211,20 @@ fn draw_tooltips(ecs: &World, ctx : &mut Rltk) {
 pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
     let runstate = gs.ecs.fetch::<RunState>();
 
-    ctx.print_color_centered(15, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Barrow");
+    ctx.set_active_console(1);
+    ctx.print_color_centered(8, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "Barrow");
 
     if let RunState::MainMenu{ menu_selection : selection } = *runstate {
         if selection == MainMenuSelection::NewGame {
-            ctx.print_color_centered(24, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Begin New Game (press Enter)");
+            ctx.print_color_centered(12, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Begin New Game (press Enter)");
         } else {
-            ctx.print_color_centered(24, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Begin New Game");
+            ctx.print_color_centered(12, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Begin New Game");
         }
 
         if selection == MainMenuSelection::Quit {
-            ctx.print_color_centered(26, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Quit (press Enter)");
+            ctx.print_color_centered(13, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Quit (press Enter)");
         } else {
-            ctx.print_color_centered(26, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Quit");
+            ctx.print_color_centered(13, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Quit");
         }
 
         match ctx.key {

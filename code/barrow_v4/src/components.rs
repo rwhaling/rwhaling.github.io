@@ -104,7 +104,10 @@ pub struct SmartMonster {
     pub target_location: Option<Position>,
     pub primary_stance: CombatStance,
     pub primary_attack: AttackMove,
+    pub primary_attack_cost: i32,
     pub recover_ep_threshold: i32,
-    pub chase_chance: f32
+    pub recover_ep_chance: f32,
+    pub visible_chase_chance: f32,
+    pub invisible_chase_chance: f32
 }
 

@@ -24,7 +24,7 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
             if let Some(_target) = target {
                 actions.insert(entity, Action{ 
                     command: AttackCommand(Melee),
-                    cost: 10, 
+                    cost: 0,
                     stance_after: Ready,
                     target: Some(*potential_target), 
                     position: None }).expect("Add target failed");
@@ -101,16 +101,16 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
     let moves = match player_stats.stance {
         Ready => {
             return vec![
-                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
-                MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: true },
+                MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
-                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: true }
+                MenuCommand { command: WaitCommand(Block), cost: 0, stance_after: Guard, enabled: true }
             ]        
         },
         Power => {
             return vec![
-                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
                 MenuCommand { command: AttackCommand(Slash), cost: 10, stance_after: Power, enabled: true },
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
@@ -119,11 +119,11 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
         },
         Guard => {
             return vec![
-                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Poke), cost: 10, stance_after: Guard, enabled: true },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
-                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: true }
+                MenuCommand { command: WaitCommand(Block), cost: 0, stance_after: Guard, enabled: true }
             ]        
         },
         Stun => {
@@ -131,7 +131,7 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
                 MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: false },
                 MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: false },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: false },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: false },
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: false }
             ]        
         }
