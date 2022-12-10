@@ -1,7 +1,12 @@
 use rltk::{ RGB, RGBA, Rltk, Point, VirtualKeyCode };
+use rltk::console;
 use specs::prelude::*;
 use super::player::get_available_moves;
-use super::{CombatStats, Player, Monster, gamelog::GameLog, Map, Name, Position, RunState, State, Command, MenuCommand};
+use super::{CombatStats, CombatStance, Player, Monster, gamelog::GameLog, Map, Name, Position, RunState, State, Command, MenuCommand};
+use super::Command::*;
+use super::AttackMove::*;
+use super::WaitMove::*;
+use super::CombatStance::*;
 use bracket_terminal::prelude::TextAlign;
 
 #[derive(PartialEq, Copy, Clone)]
@@ -44,14 +49,26 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
         let health = format!("hp:{}/{} ", stats.hp, stats.max_hp);
         let name = format!("Player");
         ctx.print_color(51, 1, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &name);
-        ctx.draw_bar_horizontal(63, 1, 16, stats.hp, stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
-        ctx.print_color(67, 1, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
-        let stance = format!(" {:?}", stats.stance);
-        ctx.print_color(51, 2, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &stance);
+        ctx.draw_bar_horizontal(65, 1, 16, stats.hp, stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
+        ctx.print_color(68, 1, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
+        let stance = format!("Stance: {:?}", stats.stance);
+        // console::log(format!("current stance: {:?}", stats.stance));
+        match stats.stance {
+            Ready => ctx.print_color(51, 2, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), &stance),
+            Power => ctx.print_color(51, 2, RGB::named(rltk::CYAN), RGB::named(rltk::BLACK), &stance),
+            Guard => ctx.print_color(51, 2, RGB::named(rltk::GREEN), RGB::named(rltk::BLACK), &stance),
+            Stun => ctx.print_color(51, 2, RGB::named(rltk::RED), RGB::named(rltk::BLACK), &stance),
+
+            _ => ctx.print_color(51, 2, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &stance)
+        };
 
         let energy = format!("ep:{}/{} ", stats.ep, stats.max_ep);
-        ctx.draw_bar_horizontal(63, 2, 16, stats.ep, stats.max_ep, RGB::named(rltk::BLUE), RGB::named(rltk::BLACK));
-        ctx.print_color(67, 2, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
+        ctx.draw_bar_horizontal(65, 2, 16, stats.ep, stats.max_ep, RGB::named(rltk::BLUE), RGB::named(rltk::BLACK));
+        ctx.print_color(68, 2, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
+
+        if menu_y == 1 || menu_y == 2 {
+            info_popup = monster_tooltip(&name);
+        }
 
         for (entity, _monster, monster_stats, name, position) in (&entities, &monsters, &combat_stats, &names, &positions).join() {
             let idx = map.xy_idx(position.x, position.y);
@@ -60,17 +77,25 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                     if stats.current_target == Some(entity) {
                         let target_string = format!("{}){}", target_offset, name.name);
                         ctx.print_color(51, 3 + gui_offset, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), target_string);
-                        ctx.draw_bar_horizontal(63, 3 + gui_offset, 16, monster_stats.hp, monster_stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
+                        ctx.draw_bar_horizontal(65, 3 + gui_offset, 16, monster_stats.hp, monster_stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
                         let health = format!("hp:{}/{}", monster_stats.hp, monster_stats.max_hp);
-                        ctx.print_color(67, 3 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
-                        let monster_stance = format!(" {:?}", monster_stats.stance);
-                        ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), monster_stance);
-                        ctx.draw_bar_horizontal(63, 4 + gui_offset, 16, monster_stats.ep, monster_stats.max_ep, RGB::named(rltk::BLUE), RGB::named(rltk::BLACK));
+                        ctx.print_color(68, 3 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
+                        let monster_stance = format!("Stance: {:?}", monster_stats.stance);
+                        match monster_stats.stance {
+                            Ready => ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), monster_stance),
+                            Power => ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::CYAN), RGB::named(rltk::BLACK), monster_stance),
+                            Guard => ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::GREEN), RGB::named(rltk::BLACK), monster_stance),
+                            Stun => ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::RED), RGB::named(rltk::BLACK), monster_stance),
+                            _ => ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), monster_stance)
+                
+                        }
+                        // ctx.print_color(51, 4 + gui_offset, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), monster_stance);
+                        ctx.draw_bar_horizontal(65, 4 + gui_offset, 16, monster_stats.ep, monster_stats.max_ep, RGB::named(rltk::BLUE), RGB::named(rltk::BLACK));
                         let energy = format!("ep:{}/{} ", monster_stats.ep, monster_stats.max_ep);
-                        ctx.print_color(67, 4 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
+                        ctx.print_color(68, 4 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
 
                         if menu_y == 3 + gui_offset || menu_y == 4 + gui_offset {
-                            info_popup = format!("{}",name.name);
+                            info_popup = monster_tooltip(&name.name);
                         }
                         target_offset += 1;
                         gui_offset += 2;
@@ -78,7 +103,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                         let target_string = format!("{} {}", target_offset, name.name);
                         ctx.print(51, 3 + gui_offset, target_string);
                         if menu_y == 3 + gui_offset {
-                            info_popup = format!("{}",name.name);
+                            info_popup = monster_tooltip(&name.name);
                         }
                         target_offset += 1;
                         gui_offset += 1;
@@ -93,29 +118,15 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
         ctx.print(51, 8 + gui_offset, format!("(QEZC) Diag. Move        "));
 
         let moves : Vec<MenuCommand> = get_available_moves(&stats);
-        ctx.print(51, 9 + gui_offset, format!("(J) {}       ", print_command(&moves[0])));
-        if menu_y == 9 + gui_offset {
-            info_popup = print_command(&moves[0]);
+        let mut move_offset = 0;
+        let move_keys : Vec<&str> = vec!["X/Sp","J","K","L","N","M"];
+        for (i,m) in moves.iter().enumerate() {
+            ctx.print(51, 9 + gui_offset + move_offset, format!("({}) {}       ", move_keys[i], print_command(&m)));
+            if menu_y == 9 + gui_offset + move_offset {
+                info_popup = command_tooltip(&m);
+            }
+            move_offset += 1;           
         }
-        ctx.print(51, 10 + gui_offset, format!("(K) {}       ", print_command(&moves[1])));
-        if menu_y == 10 + gui_offset {
-            info_popup = print_command(&moves[1]);
-        }
-        ctx.print(51, 11 + gui_offset, format!("(L) {}       ", print_command(&moves[2])));
-        if menu_y == 11 + gui_offset {
-            info_popup = print_command(&moves[2]);
-        }
-
-        ctx.print(51, 12 + gui_offset, format!("(N) {}       ", print_command(&moves[3])));
-        if menu_y == 12 + gui_offset {
-            info_popup = print_command(&moves[3]);
-        }
-
-        ctx.print(51, 13 + gui_offset, format!("(M) {}       ", print_command(&moves[4])));
-        if menu_y == 13 + gui_offset {
-            info_popup = print_command(&moves[4]);
-        }
-
     }
     // ctx.target(0);
 
@@ -126,7 +137,6 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
     for s in log.entries.iter().rev() {
         if y >= 21 { 
             ctx.printer(1, y, format!("#[white]{}",s), TextAlign::Left,Some(RGBA::named(rltk::BLACK))); 
-
             // ctx.print(2, y, s); 
         }
         y -= 1;
@@ -143,12 +153,46 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
     if menu_mouse_pos.0 > 50 && info_popup != String::from("") {
         ctx.set_bg(menu_mouse_pos.0, menu_mouse_pos.1, RGB::named(rltk::MAGENTA));
         ctx.draw_box(8,1,34,18,rltk::WHITE,rltk::BLACK);
-        ctx.print_color(9,2, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), info_popup);
+        let popup_lines: Vec<&str> = info_popup.split('\n').collect();
+        for (i,line) in popup_lines.iter().enumerate() {
+            ctx.print_color(9,2 + i, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), line);
+        }
     }
+}
+
+fn monster_tooltip(name: &String) -> String {
+    return match name.as_str() {
+        "Player" => String::from("Player\nThis is you."),
+        "Goblin" => String::from("Goblin\nWeak and cowardly\nBlocking is very effective"),
+        "Orc" => String::from("Orc\nAttacks fiercely, easily tired.\nFend is very effective."),
+        "Goblin Knight" => String::from("Goblin Knight\nFormidable attack and defense.\nVulnerable when stamina is low\nGuard stance is vulnerable to \nsmash attacks"),
+        _ => name.clone()
+    }
+}
+
+fn command_tooltip(command: &MenuCommand) -> String {
+    let command_str = match command.command {
+        AttackCommand(Melee) => { format!("Melee attack\nZero cost, low damage.\neasily blocked or fended.")},
+        AttackCommand(Slash) => { format!("Slash\nPowerful attack, no stamina damage.")},
+        AttackCommand(Smash) => { format!("Smash\nHigh cost.\nVery Powerful attack.\nDamages stamina.")},
+        AttackCommand(Bash) => { format!("Bash\nHigh cost.\nDamages stamina")},
+        AttackCommand(Poke) => { format!("Poke\nModerate cost.\nMaintains guard.")},
+
+        WaitCommand(Wait) => { format!("Wait\nRecover 10 EP\nRecover HP if not in combat") },
+        WaitCommand(Fend) => { format!("Fend\nZero cost\nModerate defense bonus\nHighly effective against Smash") },
+        WaitCommand(Block) => { format!("Block\nHighly resilient.\nWeak against Smash") },
+        WaitCommand(Brace) => { format!("Brace\nTake the hit.\nRecover 5 EP\nRemain in Power Stance") },
+
+        AttackCommand(a) => { format!("{:?}",a) },
+        WaitCommand(w) => { format!("{:?}",w) },
+        MoveCommand => { format!("") }
+    };
+    return command_str
 }
 
 fn print_command(command: &MenuCommand) -> String {
     let command_str = match command.command {
+        
         Command::AttackCommand(a) => { format!("{:?}",a) },
         Command::WaitCommand(w) => { format!("{:?}",w) },
         Command::MoveCommand => { format!("") }

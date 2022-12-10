@@ -31,16 +31,16 @@ pub fn random_monster(ecs: &mut World, x: i32, y: i32) {
         roll = rng.roll_dice(1, 6);
     }
     match roll {
-        6 => { goblin_knight(ecs, x, y) }
+        3 => { orc(ecs, x, y) }
         2 => { orc(ecs, x, y) }
         1 => { orc(ecs, x, y) }
         _ => { goblin(ecs, x, y) }
     }
 }
 
-fn orc(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('o'), 15, 45, 15, 5, 1, "Orc", Power, Smash, 0.2, 0, 1.0); }
-fn goblin(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('g'), 18, 20, 5, 3, 1, "Goblin", Ready, Melee, 0.4, 0, 1.0); }
-fn goblin_knight(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('G'), 25, 40, 5, 4, 2, "Goblin Knight", Ready, Melee, 0.5, 40, 0.3); }
+pub fn orc(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('o'), 15, 45, 15, 5, 1, "Orc", Power, Smash, 0.2, 0, 1.0); }
+pub fn goblin(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('g'), 18, 20, 5, 3, 1, "Goblin", Ready, Melee, 0.4, 0, 1.0); }
+pub fn goblin_knight(ecs: &mut World, x: i32, y: i32) { monster(ecs, x, y, rltk::to_cp437('G'), 25, 40, 5, 4, 2, "Goblin Knight", Ready, Melee, 0.5, 40, 0.3); }
 
 fn monster<S : ToString>(ecs: &mut World, x: i32, y: i32, glyph : rltk::FontCharType, hp:i32, ep:i32, cost:i32, pow:i32, def:i32, name : S, stance: CombatStance, attack: AttackMove, chase_chance: f32, ep_threshold: i32, recover_ep_chance: f32) {
     ecs.create_entity()

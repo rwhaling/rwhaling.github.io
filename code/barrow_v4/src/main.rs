@@ -1,4 +1,6 @@
-use rltk::{GameState, Rltk, RGB, register_palette_color};
+use std::cmp::Ordering;
+use rltk::{GameState, Rltk, RGB, Point, register_palette_color};
+use rltk::console;
 use specs::prelude::*;
 mod components;
 pub use components::*;
@@ -75,6 +77,7 @@ impl State {
         // Place the player and update resources
         let (player_x, player_y) = worldmap.rooms[0].center();
         let player_entity = spawner::player(&mut self.ecs, player_x, player_y);
+
         let mut position_components = self.ecs.write_storage::<Position>();
         let mut player_entity_writer = self.ecs.write_resource::<Entity>();
         *player_entity_writer = player_entity;
@@ -215,11 +218,33 @@ fn main() -> rltk::BError {
     let (player_x, player_y) = map.rooms[0].center();
 
     let player_entity = spawner::player(&mut gs.ecs, player_x, player_y);
+    console::log(format!("spawning player at {},{}", player_x, player_y));
 
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
-    for room in map.rooms.iter().skip(1) {
+
+    let cmp_room_dist = |a:&Rect, b:&Rect| -> Ordering {
+        let a_center = a.center();
+        let b_center = b.center();
+        let a_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(a_center.0, a_center.1), Point::new(player_x, player_y));
+        let b_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(b_center.0, b_center.1), Point::new(player_x, player_y));
+        return a_distance.partial_cmp(&b_distance).unwrap_or(Ordering::Equal);
+    };
+    let mut spawn_rooms = map.rooms.clone();
+    spawn_rooms.sort_by(&cmp_room_dist);
+    let first_room = 1;
+    let last_room = spawn_rooms.len() - 1;
+    for (i,room) in spawn_rooms.iter().enumerate().skip(1) {
         let (x,y) = room.center();
-        spawner::random_monster(&mut gs.ecs, x, y);
+        if i == first_room {
+            console::log(format!("{} spawning goblin at {},{}", i, x, y));
+            spawner::goblin(&mut gs.ecs, x, y);
+        } else if i == last_room {
+            console::log(format!("{} spawning goblin knight at {},{}", i, x, y));
+            spawner::goblin_knight(&mut gs.ecs, x, y);
+        } else {
+            console::log(format!("{} spawning monster at {},{}", i, x, y));
+            spawner::random_monster(&mut gs.ecs, x, y);
+        }
     }
 
     gs.ecs.insert(map);

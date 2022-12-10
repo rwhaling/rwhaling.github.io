@@ -101,15 +101,17 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
     let moves = match player_stats.stance {
         Ready => {
             return vec![
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: WaitCommand(Fend), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: WaitCommand(Block), cost: 0, stance_after: Guard, enabled: true }
             ]        
         },
         Power => {
             return vec![
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
                 MenuCommand { command: AttackCommand(Slash), cost: 10, stance_after: Power, enabled: true },
@@ -119,6 +121,7 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
         },
         Guard => {
             return vec![
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Poke), cost: 10, stance_after: Guard, enabled: true },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
@@ -128,6 +131,7 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
         },
         Stun => {
             return vec![
+                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },                
                 MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: false },
                 MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: false },
                 MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: false },
@@ -152,11 +156,11 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
         match stats.current_target {
             Some(target) => {
                 let target_pos = positions.get(target).unwrap();
+                let commands = get_available_moves(&stats);
+                let selected_command = commands[offset];
 
                 let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(target_pos.x, target_pos.y), Point::new(player_pos.x, player_pos.y));
                 if distance < 1.5 {
-                    let commands = get_available_moves(&stats);
-                    let selected_command = commands[offset];
                     let action = match selected_command.command {
                         AttackCommand(a) => { 
                             Action {
@@ -181,7 +185,20 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
                     actions.insert(player_entity, action).expect("Unable to insert action");
                     return RunState::PlayerTurn
                 } else {
-
+                    match selected_command.command {
+                        WaitCommand(w) => { 
+                            let action = Action {
+                                command: WaitCommand(w),
+                                cost: selected_command.cost,
+                                stance_after: selected_command.stance_after,
+                                target: None,
+                                position: None
+                            };
+                            actions.insert(player_entity, action).expect("Unable to insert action");
+                            return RunState::PlayerTurn              
+                        },
+                        _ => { return RunState::AwaitingInput }
+                    }
                     // console::log(format!("distance to target {:?} is {}, can't attack", target, distance));
                     return RunState::AwaitingInput
                 }
@@ -191,7 +208,7 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
                 let selected_command = commands[offset];
                 let action = match selected_command.command {
                     AttackCommand(a) => { 
-                        console::log(format!("no target selected, can't attack"));
+                        // console::log(format!("no target selected, can't attack"));
                         return RunState::AwaitingInput;
                     },
                     WaitCommand(w) => { 
@@ -278,17 +295,17 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             VirtualKeyCode::Key9 => return try_select_target(9, &gs.ecs),
 
             // Skip
-            VirtualKeyCode::Numpad5 => return rest(&mut gs.ecs),
-            VirtualKeyCode::Space => return rest(&mut gs.ecs),
-            VirtualKeyCode::X => return rest(&mut gs.ecs),
+            VirtualKeyCode::Numpad5 => return try_attack_menu(0, &gs.ecs),
+            VirtualKeyCode::Space => return try_attack_menu(0, &gs.ecs),
+            VirtualKeyCode::X => return try_attack_menu(0, &gs.ecs),
 
             // Attack
-            VirtualKeyCode::J => return try_attack_menu(0, &gs.ecs),
-            VirtualKeyCode::K => return try_attack_menu(1, &gs.ecs),
-            VirtualKeyCode::L => return try_attack_menu(2, &gs.ecs),
+            VirtualKeyCode::J => return try_attack_menu(1, &gs.ecs),
+            VirtualKeyCode::K => return try_attack_menu(2, &gs.ecs),
+            VirtualKeyCode::L => return try_attack_menu(3, &gs.ecs),
 
-            VirtualKeyCode::N => return try_attack_menu(3, &gs.ecs),
-            VirtualKeyCode::M => return try_attack_menu(4, &gs.ecs),
+            VirtualKeyCode::N => return try_attack_menu(4, &gs.ecs),
+            VirtualKeyCode::M => return try_attack_menu(5, &gs.ecs),
 
             _ => { return RunState::AwaitingInput }
         },
