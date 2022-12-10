@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use rltk::{GameState, Rltk, RGB, Point, register_palette_color};
-use rltk::console;
+// use rltk::console;
 use specs::prelude::*;
 mod components;
 pub use components::*;
@@ -50,8 +50,17 @@ impl State {
         self.ecs.maintain();
     }
 
-    fn game_over_cleanup(&mut self) {
-        // Delete everything
+    fn load_level(&mut self, depth : i32, _player_stats: Option<CombatStats>) {
+        {
+            let mut logs = self.ecs.write_resource::<GameLog>();
+            if depth == 0 {
+                logs.entries.clear();
+                logs.entries.push(String::from("Welcome to Barrow!"));
+            }    
+        }
+        let _old_player = self.ecs.remove::<Player>();
+        let _old_map = self.ecs.remove::<Map>();
+
         let mut to_delete = Vec::new();
         for e in self.ecs.entities().join() {
             to_delete.push(e);
@@ -59,42 +68,40 @@ impl State {
         for del in to_delete.iter() {
             self.ecs.delete_entity(*del).expect("Deletion failed");
         }
-    
-        // Build a new map and place the player
-        let worldmap;
-        {
-            let mut worldmap_resource = self.ecs.write_resource::<Map>();
-            *worldmap_resource = Map::new_map_rooms_and_corridors();
-            worldmap = worldmap_resource.clone();
-        }
-    
-        // Spawn bad guys
-        for room in worldmap.rooms.iter().skip(1) {
-            let (x,y) = room.center();
-            spawner::random_monster(&mut self.ecs, x, y);
-        }
-    
-        // Place the player and update resources
-        let (player_x, player_y) = worldmap.rooms[0].center();
-        let player_entity = spawner::player(&mut self.ecs, player_x, player_y);
 
-        let mut position_components = self.ecs.write_storage::<Position>();
-        let mut player_entity_writer = self.ecs.write_resource::<Entity>();
-        *player_entity_writer = player_entity;
-        let player_pos_comp = position_components.get_mut(player_entity);
-        if let Some(player_pos_comp) = player_pos_comp {
-            player_pos_comp.x = player_x;
-            player_pos_comp.y = player_y;
-        }
-        let mut log = self.ecs.write_resource::<GameLog>();
-        log.entries.clear();
+        let map : Map = Map::new_map_rooms_and_corridors();
+        let (player_x, player_y) = map.rooms[0].center();
     
-        // Mark the player's visibility as dirty
-        let mut viewshed_components = self.ecs.write_storage::<Viewshed>();
-        let vs = viewshed_components.get_mut(player_entity);
-        if let Some(vs) = vs {
-            vs.dirty = true;
-        }                                               
+        let player_entity = spawner::player(&mut self.ecs, player_x, player_y, None);
+        // console::log(format!("spawning player at {},{}", player_x, player_y));
+    
+        let cmp_room_dist = |a:&Rect, b:&Rect| -> Ordering {
+            let a_center = a.center();
+            let b_center = b.center();
+            let a_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(a_center.0, a_center.1), Point::new(player_x, player_y));
+            let b_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(b_center.0, b_center.1), Point::new(player_x, player_y));
+            return a_distance.partial_cmp(&b_distance).unwrap_or(Ordering::Equal);
+        };
+        let mut spawn_rooms = map.rooms.clone();
+        spawn_rooms.sort_by(&cmp_room_dist);
+        let first_room = 1;
+        let last_room = spawn_rooms.len() - 1;
+        for (i,room) in spawn_rooms.iter().enumerate().skip(1) {
+            let (x,y) = room.center();
+            if i == first_room {
+                // console::log(format!("{} spawning goblin at {},{}", i, x, y));
+                spawner::goblin(&mut self.ecs, x, y);
+            } else if i == last_room {
+                // console::log(format!("{} spawning goblin knight at {},{}", i, x, y));
+                spawner::goblin_knight(&mut self.ecs, x, y);
+            } else {
+                // console::log(format!("{} spawning monster at {},{}", i, x, y));
+                spawner::random_monster(&mut self.ecs, x, y);
+            }
+        }
+
+        self.ecs.insert(map);
+        self.ecs.insert(player_entity);    
     }
 }
 
@@ -167,7 +174,12 @@ impl GameState for State {
                 match result {
                     gui::GameOverResult::NoSelection => {}
                     gui::GameOverResult::QuitToMenu => {
-                        self.game_over_cleanup();
+                        {
+                            let mut log = self.ecs.write_resource::<GameLog>();
+                            log.entries.clear();
+                        }
+                        self.load_level(0, None);
+                        // self.game_over_cleanup();
                         newrunstate = RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame };
                     }
                 }
@@ -199,7 +211,6 @@ fn main() -> rltk::BError {
     register_palette_color("green", RGB::named(rltk::GREEN));
     register_palette_color("blue", RGB::named(rltk::BLUE));
 
-    // context.with_post_scanlines(true);
     let mut gs = State {
         ecs: World::new(),
     };
@@ -213,45 +224,11 @@ fn main() -> rltk::BError {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<Action>();
     gs.ecs.register::<SmartMonster>();
-
-    let map : Map = Map::new_map_rooms_and_corridors();
-    let (player_x, player_y) = map.rooms[0].center();
-
-    let player_entity = spawner::player(&mut gs.ecs, player_x, player_y);
-    console::log(format!("spawning player at {},{}", player_x, player_y));
-
     gs.ecs.insert(rltk::RandomNumberGenerator::new());
+    gs.ecs.insert(gamelog::GameLog{ entries : vec![] });
 
-    let cmp_room_dist = |a:&Rect, b:&Rect| -> Ordering {
-        let a_center = a.center();
-        let b_center = b.center();
-        let a_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(a_center.0, a_center.1), Point::new(player_x, player_y));
-        let b_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(b_center.0, b_center.1), Point::new(player_x, player_y));
-        return a_distance.partial_cmp(&b_distance).unwrap_or(Ordering::Equal);
-    };
-    let mut spawn_rooms = map.rooms.clone();
-    spawn_rooms.sort_by(&cmp_room_dist);
-    let first_room = 1;
-    let last_room = spawn_rooms.len() - 1;
-    for (i,room) in spawn_rooms.iter().enumerate().skip(1) {
-        let (x,y) = room.center();
-        if i == first_room {
-            console::log(format!("{} spawning goblin at {},{}", i, x, y));
-            spawner::goblin(&mut gs.ecs, x, y);
-        } else if i == last_room {
-            console::log(format!("{} spawning goblin knight at {},{}", i, x, y));
-            spawner::goblin_knight(&mut gs.ecs, x, y);
-        } else {
-            console::log(format!("{} spawning monster at {},{}", i, x, y));
-            spawner::random_monster(&mut gs.ecs, x, y);
-        }
-    }
-
-    gs.ecs.insert(map);
-    gs.ecs.insert(rltk::RandomNumberGenerator::new());
-    gs.ecs.insert(player_entity);
     gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });
-    gs.ecs.insert(gamelog::GameLog{ entries : vec!["Welcome to Barrow".to_string()] });
+    gs.load_level(0,None);
 
     rltk::main_loop(context, gs)
 }

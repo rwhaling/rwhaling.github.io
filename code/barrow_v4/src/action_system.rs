@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use super::{CombatStats, Action, ActionType, AttackMove, Command, WaitMove, CombatStance, Name, Player, Position, gamelog::GameLog, RunState, Map, Viewshed};
+use super::{CombatStats, Action, WaitMove, CombatStance, Name, Player, Position, gamelog::GameLog, RunState, Map, Viewshed};
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
@@ -30,7 +30,7 @@ impl<'a> System<'a> for ActionSystem {
             let eff_action: Action;
             {
                 // Check here for any conditions that would override the selected action
-                let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
+                let subject_stats = combat_stats.get_mut(entity).unwrap(); 
                 if subject_stats.stance == Stun {
                     log.entries.push(format!("#[red]{} is stunned#[], recovering...", &name.name));
                     // TODO: use proper command/regen
@@ -75,7 +75,6 @@ impl<'a> System<'a> for ActionSystem {
                     };
                     let eff_def = target_stats.defense + def_adj;
                     let raw_damage = damage_formula(&mut rng, eff_pow, eff_def);
-                    let current_ep = subject_stats.ep;
                     let target_name = names.get(*target).unwrap();
 
                     let attack_ep_damage = match (a,target_stance) {
@@ -167,7 +166,7 @@ pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
     }
     if stats.ep < 0 {
         stats.stance = CombatStance::Stun;
-    } 
+    }
     if stats.ep >= stats.max_ep {
         stats.ep = stats.max_ep;
     }
@@ -190,7 +189,7 @@ pub fn move_regen(stats: &mut CombatStats) {
     }
 }
 
-pub fn rest_or_default(stats: &mut CombatStats, wait_move: WaitMove, cost: i32) {
+pub fn rest_or_default(stats: &mut CombatStats, _wait_move: WaitMove, cost: i32) {
     // if stats.stance == CombatStance::Guard { return; };
     if stats.current_target == None {
         apply_hp_damage(stats, stats.hp_regen);

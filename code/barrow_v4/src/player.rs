@@ -1,7 +1,7 @@
 use rltk::{VirtualKeyCode, Rltk, Point, console};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, State, CombatStats, CombatStance, Map, Monster, RunState, Action, ActionType, AttackMove, WaitMove, MenuCommand, Command };
+use super::{Position, Player, State, CombatStats, Map, Monster, RunState, Action, MenuCommand, Command };
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
@@ -98,7 +98,7 @@ pub fn try_select_target(selection: usize, ecs: &World) -> RunState {
 }
 
 pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
-    let moves = match player_stats.stance {
+    match player_stats.stance {
         Ready => {
             return vec![
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
@@ -139,10 +139,9 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
                 MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: false }
             ]        
         }
-    };
+    }
     // todo: enable/disable based on ep
     // todo: wait/block/defend based on ep
-    return moves
 }
 
 pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
@@ -199,15 +198,13 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
                         },
                         _ => { return RunState::AwaitingInput }
                     }
-                    // console::log(format!("distance to target {:?} is {}, can't attack", target, distance));
-                    return RunState::AwaitingInput
                 }
             },
             None => {
                 let commands = get_available_moves(&stats);
                 let selected_command = commands[offset];
                 let action = match selected_command.command {
-                    AttackCommand(a) => { 
+                    AttackCommand(_a) => { 
                         // console::log(format!("no target selected, can't attack"));
                         return RunState::AwaitingInput;
                     },
@@ -229,24 +226,6 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
     }
     return RunState::AwaitingInput
 
-}
-
-pub fn rest(ecs: &mut World) -> RunState {
-    let entities = ecs.entities();
-    let players = ecs.read_storage::<Player>();
-    let mut actions = ecs.write_storage::<Action>();
-    
-    for (entity, _player) in (&entities, &players).join() {
-        actions.insert(entity, Action{ 
-            // action_type: ActionType::Wait, attack: None, 
-            command: WaitCommand(Wait),
-            cost: -5,
-            stance_after: Ready,
-            target:None, 
-            position: None }).expect("Rest failed");
-    }
-
-    return RunState::PlayerTurn
 }
 
 pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {

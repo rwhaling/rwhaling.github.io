@@ -1,13 +1,14 @@
 use rltk::{ RGB, RandomNumberGenerator };
 use specs::prelude::*;
-use super::{CombatStats, Command, AttackMove, WaitMove, CombatStance, Player, Renderable, Name, Position, Viewshed, Monster, BlocksTile, SmartMonster, SmartMonsterState };
+use super::{CombatStats, AttackMove, CombatStance, Player, Renderable, Name, Position, Viewshed, Monster, BlocksTile, SmartMonster, SmartMonsterState };
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
 use super::CombatStance::*;
 
 /// Spawns the player and returns his/her entity object.
-pub fn player(ecs : &mut World, player_x : i32, player_y : i32) -> Entity {
+pub fn player(ecs : &mut World, player_x : i32, player_y : i32, stats: Option<CombatStats>) -> Entity {
+    let player_stats = stats.unwrap_or(CombatStats{ max_hp: 30, hp: 30, hp_regen: -10, max_ep: 40, ep: 40, ep_regen: -5, defense: 0, power: 4, attack_cost: 5, stance: Ready, current_target: None, visible_targets: vec![], last_command: None });
     ecs
         .create_entity()
         .with(Position { x: player_x, y: player_y })
@@ -19,7 +20,7 @@ pub fn player(ecs : &mut World, player_x : i32, player_y : i32) -> Entity {
         .with(Player{})
         .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
         .with(Name{name: "Player".to_string() })
-        .with(CombatStats{ max_hp: 30, hp: 30, hp_regen: -10, max_ep: 40, ep: 40, ep_regen: -5, defense: 0, power: 4, attack_cost: 5, stance: Ready, current_target: None, visible_targets: vec![], last_command: None })
+        .with(player_stats)
         .build()
 }
 

@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use super::{Viewshed, Monster, Map, Position, Action, Command, AttackMove, WaitMove, ActionType, GameLog, CombatStats, RunState, SmartMonster};
+use super::{Viewshed, Monster, Map, Position, Action, CombatStats, RunState, SmartMonster};
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
@@ -20,12 +20,11 @@ impl<'a> System<'a> for MonsterAI {
                         WriteStorage<'a, Action>,
                         WriteStorage<'a, CombatStats>,
                         WriteStorage<'a, SmartMonster>,
-                        WriteExpect<'a, GameLog>,
                         WriteExpect<'a, rltk::RandomNumberGenerator>
                     );
 
     fn run(&mut self, data : Self::SystemData) {
-        let (mut map, player_entity, runstate, entities, viewsheds, monster, position, mut actions, mut combat_stats, mut smart_monsters, mut log, mut rng) = data;
+        let (mut map, player_entity, runstate, entities, viewsheds, monster, position, mut actions, mut combat_stats, mut smart_monsters, mut rng) = data;
 
         if *runstate != RunState::MonsterTurn { return; }
 
