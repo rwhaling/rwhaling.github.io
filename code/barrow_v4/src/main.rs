@@ -73,22 +73,11 @@ impl State {
         let (player_x, player_y) = map.rooms[0].center();
     
         let player_entity = spawner::player(&mut self.ecs, player_x, player_y, None);
-        // console::log(format!("spawning player at {},{}", player_x, player_y));
-    
-        let cmp_room_dist = |a:&Rect, b:&Rect| -> Ordering {
-            let a_center = a.center();
-            let b_center = b.center();
-            let a_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(a_center.0, a_center.1), Point::new(player_x, player_y));
-            let b_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(b_center.0, b_center.1), Point::new(player_x, player_y));
-            return a_distance.partial_cmp(&b_distance).unwrap_or(Ordering::Equal);
-        };
-        let mut spawn_rooms = map.rooms.clone();
-        spawn_rooms.sort_by(&cmp_room_dist);
-        let first_room = 1;
-        let last_room = spawn_rooms.len() - 1;
-        for (i,room) in spawn_rooms.iter().enumerate().skip(1) {
+
+        let last_room = map.rooms.len() - 1;
+        for (i,room) in map.rooms.iter().enumerate().skip(1) {
             let (x,y) = room.center();
-            if i == first_room {
+            if i == 1 {
                 // console::log(format!("{} spawning goblin at {},{}", i, x, y));
                 spawner::goblin(&mut self.ecs, x, y);
             } else if i == last_room {
@@ -209,6 +198,7 @@ fn main() -> rltk::BError {
     register_palette_color("orange", RGB::named(rltk::ORANGE));
     register_palette_color("yellow", RGB::named(rltk::YELLOW));
     register_palette_color("green", RGB::named(rltk::GREEN));
+    register_palette_color("cyan", RGB::named(rltk::CYAN));
     register_palette_color("blue", RGB::named(rltk::BLUE));
 
     let mut gs = State {

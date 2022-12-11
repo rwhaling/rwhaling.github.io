@@ -1,11 +1,11 @@
 use specs::prelude::*;
-use super::{CombatStats, Action, WaitMove, CombatStance, Name, Player, Position, gamelog::GameLog, RunState, Map, Viewshed};
+use super::{CombatStats, Action, WaitMove, CombatStance, Name, Player, Position, gamelog::GameLog, RunState, Map, TileType, Viewshed};
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
 use super::CombatStance::*;
 
-// use rltk::console;
+use rltk::console;
 
 pub struct ActionSystem {}
 
@@ -207,10 +207,12 @@ pub fn delete_the_dead(ecs : &mut World) {
         let players = ecs.read_storage::<Player>();
         let names = ecs.read_storage::<Name>();
         let entities = ecs.entities();
+        let positions = ecs.read_storage::<Position>();
+        let map = ecs.read_resource::<Map>();
         let mut log = ecs.write_resource::<GameLog>();
-        for (entity, stats) in (&entities, &combat_stats).join() {
+        for (entity, stats, position) in (&entities, &combat_stats, &positions).join() {
+            let player = players.get(entity);
             if stats.hp < 1 {
-                let player = players.get(entity);
                 match player {
                     None => {
                         let victim_name = names.get(entity);
@@ -220,13 +222,29 @@ pub fn delete_the_dead(ecs : &mut World) {
                         dead.push(entity)
                     }
                     Some(_) => {
+                        let tile_type = map.tiles[map.xy_idx(position.x, position.y)];
                         let mut runstate = ecs.write_resource::<RunState>();
                         if *runstate != RunState::GameOver {
-                            log.entries.push(format!("#[red]You died! #[pink]Press ESCAPE to return to the menu."));
+                            log.entries.push(format!("#[red]You died! "));
+                            log.entries.push(format!("#[pink]Press ESCAPE to return to the menu."));
                             *runstate = RunState::GameOver;
-                        }
+                        }                         
                     }
                 }
+            }
+            match player {
+                Some(_) => {
+                    if map.tiles[map.xy_idx(position.x, position.y)] == TileType::StairsDown {
+                        let mut runstate = ecs.write_resource::<RunState>();
+                        if *runstate != RunState::GameOver {
+                            log.entries.push(format!("You see stairs going deeper into the barrow..."));
+                            log.entries.push(format!("#[cyan](This is the end for now)#[]"));
+                            log.entries.push(format!("#[pink]Press ESCAPE to return to the menu"));
+                            *runstate = RunState::GameOver;    
+                        }
+                    }
+                },
+                _ => {}
             }
         }
     }

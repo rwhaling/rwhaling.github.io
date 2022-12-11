@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    
+    <title>
+         Barrow, v4
+        
+    </title>
+    
+
+    
+         <link rel="icon" type="image/png" href=&#x2F;icon&#x2F;favicon.png />
+    
+
+    
+
+    
+
+    
+
+    
+    
+        <script src=https://whaling.dev/js/feather.min.js></script>
+    
+
+
+    
+        <link href=https://whaling.dev/css/fonts.css rel="stylesheet" />
+    
+
+    <link rel="stylesheet" type="text/css" media="screen" href=https://whaling.dev/css/main.css />
+
+    
+        <link
+            rel="stylesheet"
+            id="darkModeStyle"
+            type="text/css"
+            href=https://whaling.dev/css/dark.css
+            
+            
+                disabled
+            
+        />
+    
+
+
+    
+
+
+</head>
+
+
+<body>
+    <div class="content">
+        <header>
+    <div class="main" id="main_title">
+        <a href=https:&#x2F;&#x2F;whaling.dev></a>
+    </div>
+
+    <nav>
+        
+            <a id="dark-mode-toggle" onclick="toggleTheme()" href=""></a>
+            <script src=https://whaling.dev/js/themetoggle.js></script>
+        
+    </nav>
+</header>
+
+
+        
+    
+<main>
+    <article>
+        <div class="title">
+            <h1 class="title">Barrow, v4</h1>
+            <div class="meta">
+                
+                on  2022-12-10
+
+                
+            </div>
+        </div>
+
+        
+
+        <section class="body">
+            <p>A month later, more progress - more refinement, and a lot of slow design decisions.</p>
+<p>The biggest changes were:</p>
+<ul>
+<li>completely rewrote the combat system
+<ul>
+<li>de-emphasized the rock-paper-scissors stance system</li>
+<li>modeled stance changes as part of the move system</li>
+<li>added multiple reaction/recovery moves</li>
+<li>de-emphasized guard break mechanic, focusing on damage bonuses</li>
+</ul>
+</li>
+<li>added tooltips for monsters and commands</li>
+<li>reworked monster AI
+<ul>
+<li>monsters understand how to manage their own stamina</li>
+<li>some are more conservative than others</li>
+</ul>
+</li>
+</ul>
+<p>What's next?
+I think this is quite close to a point where I could start getting more significant feedback from folks, but first:</p>
+<ul>
+<li>tweak the balance to emphasize the intent of the combat system</li>
+<li>more detail and hints in the tooltips</li>
+<li>hone the AI until the difficulty is right</li>
+</ul>
+<p>What might come after that?</p>
+<ul>
+<li>Items, especially potions</li>
+<li>More floors, more enemies</li>
+<li>Gear, experience, or other progression</li>
+<li>Larger floors, more variety, camera system</li>
+<li>Gold, scorekeeping, or other stats</li>
+<li>Flavor text</li>
+</ul>
+<p>With all of the above, I can see Barrow as a complete game of modest ambitions, with a 6-8 floor dungeon, that takes around 45 minutes to complete.</p>
+<p>After that, there are other ideas that I'd want to explore in subsequent games, but not in Barrow:</p>
+<ul>
+<li>Multiple classes/build variety</li>
+<li>Ranged combat</li>
+<li>Move variety:
+<ul>
+<li>Moves with charge times</li>
+<li>Moves with cooldowns</li>
+<li>Free moves</li>
+</ul>
+</li>
+<li>Combat movement system</li>
+<li>Status effect systems in general</li>
+<li>More sophisticated AI</li>
+<li>Proper boss fights</li>
+<li>Food/Crafting</li>
+<li>Followers</li>
+<li>Overworld exploration</li>
+<li>Towns and NPC's</li>
+<li>Story/Dialogue</li>
+<li>Art</li>
+</ul>
+<p><canvas id="canvas" width="640" height="480"></canvas></p>
+<script src="./wasm/barrow_v4.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+    await wasm_bindgen("./wasm/barrow_v4_bg.wasm");
+    });
+</script>
+        </section>
+
+        
+
+    </article>
+</main>
+
+
+
+        <footer>
+  <div style="display:flex">
+    
+        <a class="soc" href=https:&#x2F;&#x2F;github.com&#x2F;richardwhaling title=GitHub>
+            <i data-feather=github></i>
+        </a>
+    
+  </div>
+  <div class="footer-info">
+    2022 © richard whaling | <a
+      href="https://github.com/XXXMrG/archie-zola">Archie-Zola Theme</a>
+  </div>
+</footer>
+
+
+<script>
+    feather.replace();
+</script>
+
+
+    </div>
+</body>
+
+</html>

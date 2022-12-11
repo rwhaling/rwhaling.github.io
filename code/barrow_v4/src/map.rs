@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use rltk::{ RGB, Rltk, RandomNumberGenerator, BaseMap, Algorithm2D, Point, FastNoise};
 use super::{Rect, Position};
 use std::cmp::{max, min};
@@ -7,9 +8,9 @@ const MAPWIDTH : usize = 50;
 const MAPHEIGHT : usize = 43;
 const MAPCOUNT : usize = MAPHEIGHT * MAPWIDTH;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum TileType {
-    Wall, Floor
+    Wall, Floor, StairsDown
 }
 
 #[derive(Default, Clone)]
@@ -127,6 +128,23 @@ impl Map {
             }
         }
 
+        let first_room = map.rooms[0];
+        let first_room_center = first_room.center();
+
+        let cmp_room_dist = |a:&Rect, b:&Rect| -> Ordering {
+            let a_center = a.center();
+            let b_center = b.center();
+            let a_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(a_center.0, a_center.1), Point::new(first_room_center.0, first_room_center.1));
+            let b_distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(b_center.0, b_center.1), Point::new(first_room_center.0, first_room_center.1));
+            return a_distance.partial_cmp(&b_distance).unwrap_or(Ordering::Equal);
+        };
+        // let mut spawn_rooms = map.rooms.clone();
+        map.rooms.sort_by(&cmp_room_dist);
+
+        let stairs_position = map.rooms[map.rooms.len()-1].center();
+        let stairs_idx = map.xy_idx(stairs_position.0, stairs_position.1);
+        map.tiles[stairs_idx] = TileType::StairsDown;
+
         map
     }
 }
@@ -231,6 +249,11 @@ pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
 
                     bg = RGB::from_f32(0.15,0.1,0.0);
                 }
+                TileType::StairsDown => {
+                    glyph = rltk::to_cp437('>');
+                    fg = RGB::from_f32(0.65,0.65,0.65);
+                    bg = RGB::from_f32(0.15,0.1,0.0);
+                }
             }
             if !map.visible_tiles[idx] {
                  match tile { 
@@ -251,6 +274,11 @@ pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
                         );
                         bg = RGB::named(rltk::BLACK);
                     }
+                    TileType::StairsDown => {
+                        fg = RGB::from_f32(0.4,0.4,0.4);
+                        bg = RGB::named(rltk::BLACK);
+                    }
+    
                 }
             }
             ctx.set(x, y, fg, bg, glyph);
