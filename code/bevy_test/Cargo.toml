@@ -1,0 +1,21 @@
+[package]
+name = "bevy_test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "=0.9.0" }
+parking_lot = "0.12"
+lazy_static = "1.4"
+bracket-lib = { git = "https://github.com/amethyst/bracket-lib.git", rev = "0a7fcbcd" }
+bracket-bevy = { git = "https://github.com/amethyst/bracket-lib.git", rev = "0a7fcbcd" }
+
+[patch.crates-io]
+bracket-terminal = { git = "https://github.com/amethyst/bracket-lib.git", features = ["bevy"], rev = "0a7fcbcd" }
+bracket-color = { git = "https://github.com/amethyst/bracket-lib.git", features = ["bevy"], rev = "0a7fcbcd" }
+bracket-geometry = { git = "https://github.com/amethyst/bracket-lib.git", features = ["bevy"], rev = "0a7fcbcd" }
+
+[profile.dev]
+opt-level = 1
