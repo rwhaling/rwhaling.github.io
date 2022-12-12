@@ -1,7 +1,7 @@
 use rltk::{VirtualKeyCode, Rltk, Point, console};
 use specs::prelude::*;
 use std::cmp::{max, min};
-use super::{Position, Player, State, CombatStats, Map, Monster, RunState, Action, MenuCommand, Command };
+use super::{Position, Player, State, CombatStats, GameLog, Map, Monster, RunState, Action, MenuCommand, Command, TileType };
 use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
@@ -79,6 +79,28 @@ pub fn update_targeting(ecs: &World, _ctx: &mut Rltk) {
     return; 
 }
 
+pub fn try_descend(ecs: &World) -> RunState {
+    let player_entity = ecs.read_resource::<Entity>();
+    let positions = ecs.read_storage::<Position>();
+    let map = ecs.read_resource::<Map>();
+    let mut log = ecs.write_resource::<GameLog>();
+
+    let player_pos = positions.get(*player_entity).unwrap();
+    console::log(format!("{:?} attempting to descend at {:?}", *player_entity, player_pos));
+
+    let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
+
+    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsDown {
+        log.entries.push(format!("You see descend deeper into the barrow..."));
+        log.entries.push(format!("#[cyan](This is the end for now)#[]"));
+        log.entries.push(format!("#[pink]Press ESCAPE to return to the menu"));
+        return RunState::GameOver;    
+    } else {
+        return RunState::AwaitingInput
+    }    
+}
+
+
 pub fn try_select_target(selection: usize, ecs: &World) -> RunState {
     let mut combat_stats = ecs.write_storage::<CombatStats>();
     let players = ecs.read_storage::<Player>();
@@ -104,8 +126,8 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
-                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
-                MenuCommand { command: WaitCommand(Fend), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Bash), cost: 10, stance_after: Guard, enabled: true },
+                MenuCommand { command: WaitCommand(Fend), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: WaitCommand(Block), cost: 0, stance_after: Guard, enabled: true }
             ]        
         },
@@ -114,34 +136,32 @@ pub fn get_available_moves(player_stats: &CombatStats) -> Vec<MenuCommand> {
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: true },
-                MenuCommand { command: AttackCommand(Slash), cost: 10, stance_after: Power, enabled: true },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
-                MenuCommand { command: WaitCommand(Brace), cost: -5, stance_after: Power, enabled: true }
+                MenuCommand { command: AttackCommand(Bash), cost: 10, stance_after: Guard, enabled: false },
+                MenuCommand { command: WaitCommand(Fend), cost: 0, stance_after: Ready, enabled: false },
+                MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: false }
             ]        
         },
         Guard => {
             return vec![
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
                 MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: true },
-                MenuCommand { command: AttackCommand(Poke), cost: 10, stance_after: Guard, enabled: true },
-                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: true },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Guard, enabled: false },
+                MenuCommand { command: AttackCommand(Bash), cost: 10, stance_after: Guard, enabled: true },
+                MenuCommand { command: WaitCommand(Fend), cost: 0, stance_after: Ready, enabled: false },
                 MenuCommand { command: WaitCommand(Block), cost: 0, stance_after: Guard, enabled: true }
             ]        
         },
         Stun => {
             return vec![
                 MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },                
-                MenuCommand { command: AttackCommand(Melee), cost: 10, stance_after: Ready, enabled: false },
-                MenuCommand { command: AttackCommand(Smash), cost: 20, stance_after: Power, enabled: false },
-                MenuCommand { command: AttackCommand(Bash), cost: 15, stance_after: Guard, enabled: false },
-                MenuCommand { command: WaitCommand(Wait), cost: -10, stance_after: Ready, enabled: true },
+                MenuCommand { command: AttackCommand(Melee), cost: 0, stance_after: Ready, enabled: false },
+                MenuCommand { command: AttackCommand(Smash), cost: 15, stance_after: Power, enabled: false },
+                MenuCommand { command: AttackCommand(Bash), cost: 10, stance_after: Guard, enabled: false },
+                MenuCommand { command: WaitCommand(Fend), cost: 0, stance_after: Ready, enabled: false },
                 MenuCommand { command: WaitCommand(Block), cost: -5, stance_after: Guard, enabled: false }
             ]        
         }
     }
-    // todo: enable/disable based on ep
-    // todo: wait/block/defend based on ep
 }
 
 pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
@@ -152,11 +172,16 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
     let entities = ecs.entities();
 
     for (_player,player_entity, stats,player_pos) in (&player, &entities, &combat_stats, &positions).join() {
+        let commands = get_available_moves(&stats);
+        let selected_command = commands[offset];
+
+        if selected_command.enabled == false {
+            return RunState::AwaitingInput;
+        }
+
         match stats.current_target {
             Some(target) => {
                 let target_pos = positions.get(target).unwrap();
-                let commands = get_available_moves(&stats);
-                let selected_command = commands[offset];
 
                 let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(target_pos.x, target_pos.y), Point::new(player_pos.x, player_pos.y));
                 if distance < 1.5 {
@@ -285,6 +310,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::N => return try_attack_menu(4, &gs.ecs),
             VirtualKeyCode::M => return try_attack_menu(5, &gs.ecs),
+
+            // Descend
+            VirtualKeyCode::Period => return try_descend(&gs.ecs),
 
             _ => { return RunState::AwaitingInput }
         },

@@ -108,18 +108,28 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                 }
             }
         }
-        ctx.print(51, 4 + gui_offset, format!("                         "));
-        ctx.print(51, 5 + gui_offset, format!("Commands                 "));
-        ctx.print(51, 6 + gui_offset, format!("--------                 "));
-        ctx.print(51, 7 + gui_offset, format!("(ASDW) Move              "));
-        ctx.print(51, 8 + gui_offset, format!("(QEZC) Diag. Move        "));
+        gui_offset += 4;
+        ctx.print(51, 0 + gui_offset, format!("                            "));
+        ctx.print(51, 1 + gui_offset, format!("Commands             EP Cost"));
+        ctx.print(51, 2 + gui_offset, format!("--------             -------"));
+        ctx.print(51, 3 + gui_offset, format!("(ASDW) Move                 "));
+        ctx.print(51, 4 + gui_offset, format!("(QEZC) Diag. Move           "));
+        ctx.print(51, 5 + gui_offset, format!("(.)    Descend              "));
+
+        gui_offset += 6;
 
         let moves : Vec<MenuCommand> = get_available_moves(&stats);
         let mut move_offset = 0;
-        let move_keys : Vec<&str> = vec!["X/Sp","J","K","L","N","M"];
+        let move_keys : Vec<&str> = vec!["(X/Sp)","(J)","(K)","(L)","(N)","(M)"];
         for (i,m) in moves.iter().enumerate() {
-            ctx.print(51, 9 + gui_offset + move_offset, format!("({}) {}       ", move_keys[i], print_command(&m)));
-            if menu_y == 9 + gui_offset + move_offset {
+            if m.enabled == true {
+                ctx.printer(51, gui_offset + move_offset, format!("#[white]{:6} {}       ", move_keys[i], print_command(&m)), TextAlign::Left,Some(RGBA::named(rltk::BLACK)));
+            } else {
+                // console::log(format!("{:?}",m));
+                ctx.printer(51, gui_offset + move_offset, format!("#[grey]{:6} {}       ", move_keys[i], print_command(&m)), TextAlign::Left,Some(RGBA::named(rltk::BLACK)));
+
+            }
+            if menu_y == gui_offset + move_offset {
                 info_popup = Some(command_tooltip(&m));
             }
             move_offset += 1;           
@@ -134,7 +144,6 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
     for s in log.entries.iter().rev() {
         if y >= 21 { 
             ctx.printer(1, y, format!("#[white]{}",s), TextAlign::Left,Some(RGBA::named(rltk::BLACK))); 
-            // ctx.print(2, y, s); 
         }
         y -= 1;
     }
@@ -170,15 +179,15 @@ fn monster_tooltip(name: &String) -> String {
 
 fn command_tooltip(command: &MenuCommand) -> String {
     let command_str = match command.command {
-        AttackCommand(Melee) => { format!("Melee attack\nZero cost, low damage.\neasily blocked or fended.")},
-        AttackCommand(Slash) => { format!("Slash\nPowerful attack, no stamina damage.")},
-        AttackCommand(Smash) => { format!("Smash\nHigh cost.\nVery Powerful attack.\nDamages stamina.")},
-        AttackCommand(Bash) => { format!("Bash\nHigh cost.\nDamages stamina")},
-        AttackCommand(Poke) => { format!("Poke\nModerate cost.\nMaintains guard.")},
+        AttackCommand(Melee) => { format!("Melee attack\nZero cost, low damage.\nEasily blocked or fended.")},
+        AttackCommand(Slash) => { format!("Slash\nPowerful attack, no stamina damage")},
+        AttackCommand(Smash) => { format!("Smash\nHigh cost\nVery Powerful attack\nDamages stamina\nResisted by Fend")},
+        AttackCommand(Bash) => { format!("Bash\nHigh cost\nDamages stamina\nResisted by Block\n")},
+        AttackCommand(Poke) => { format!("Poke\nModerate cost\nMaintains guard.")},
 
         WaitCommand(Wait) => { format!("Wait\nRecover 10 EP\nRecover HP if not in combat") },
         WaitCommand(Fend) => { format!("Fend\nZero cost\nModerate defense bonus\nHighly effective against Smash") },
-        WaitCommand(Block) => { format!("Block\nHighly resilient.\nWeak against Smash") },
+        WaitCommand(Block) => { format!("Block\nHighly resilient.\nWeak against Smash\nStrong against Bash") },
         WaitCommand(Brace) => { format!("Brace\nTake the hit.\nRecover 5 EP\nRemain in Power Stance") },
 
         MoveCommand => { format!("") }
@@ -193,7 +202,8 @@ fn print_command(command: &MenuCommand) -> String {
         Command::WaitCommand(w) => { format!("{:?}",w) },
         Command::MoveCommand => { format!("") }
     };
-    return format!("{:5} > {:?} ({:3})", command_str, command.stance_after, command.cost)
+    let cost_str = format!("{:3}",command.cost).replace("-","+");
+    return format!("{:5} > {:?}  ({})", command_str, command.stance_after, cost_str)
 }
 
 fn draw_tooltips(ecs: &World, ctx : &mut Rltk) {

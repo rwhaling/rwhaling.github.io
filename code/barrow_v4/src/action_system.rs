@@ -58,18 +58,20 @@ impl<'a> System<'a> for ActionSystem {
                     let pow_adj = match (a,target_stance) {
                         (Melee, Guard) => -1,
                         (Melee, _ ) => 0,
-                        (Slash, Guard) => 0,
-                        (Slash, _ ) => 2,
+                        (Slash, Guard) => -1,
+                        (Slash, _ ) => 1,
                         (Smash, Guard) => 1,
-                        (Smash, _ ) => 3,
-                        (Bash, _ ) => -1,
+                        (Smash, _ ) => 2,
+                        (Bash, Guard ) => 1,
+                        (Bash, _ ) => 0,
+                        (Bash, Power) => -1,
                         (Poke, _ ) => -1
                     };                    
                     let eff_pow = subject_stats.power + pow_adj;
                     let def_adj = match (a, target_last_command) {
                         // TODO: fill out
-                        (_, Some(WaitCommand(Block))) => 3,
-                        (Smash, Some(WaitCommand(Fend))) => 3,
+                        (_, Some(WaitCommand(Block))) => 1,
+                        (Smash, Some(WaitCommand(Fend))) => 2,
                         (_, Some(WaitCommand(Fend))) => 1,
                         (_, _) => 0 
                     };
@@ -78,18 +80,23 @@ impl<'a> System<'a> for ActionSystem {
                     let target_name = names.get(*target).unwrap();
 
                     let attack_ep_damage = match (a,target_stance) {
-                        (Melee, Guard) => 5,
-                        (Slash, Guard) => 5,
-                        (Smash, Guard) => 10,
-                        (Smash, _) => 10,
+                        (Smash, Guard) => 5,
+                        (Smash, _) => 5,
                         (Bash, Guard) => 15,
                         (Bash, _) => 10,
-                        (Poke, Guard) => 5,
                         (_, _) => 0
+                    };
+
+                    let attack_verb_string = match a {
+                        Melee => "attacks",
+                        Smash => "smashes",
+                        Bash  => "shield bashes",
+                        _     => "attacks"
                     };
 
                     let reaction_ep_damage = match (a, target_last_command) {
                         // TODO: fill out
+                        (Bash, Some(WaitCommand(Block))) => -10,
                         (_, Some(WaitCommand(Block))) => 5,
                         (_, Some(WaitCommand(Fend))) => 0,
                         (_, _) => 0
@@ -97,7 +104,12 @@ impl<'a> System<'a> for ActionSystem {
 
                     let ep_damage = attack_ep_damage + reaction_ep_damage;
 
-                    log.entries.push(format!("{} hits #[orange]{}#[] for #[orange]{} hp#[].", &name.name, &target_name.name, raw_damage));
+                    if ep_damage != 0 {
+                        log.entries.push(format!("{} {} #[orange]{}#[] for #[orange]{} hp#[] ({} ep).", &name.name, attack_verb_string, &target_name.name, raw_damage, ep_damage));
+                    } else {
+                        log.entries.push(format!("{} {} #[orange]{}#[] for #[orange]{} hp#[].", &name.name, attack_verb_string, &target_name.name, raw_damage));
+                    }
+
                     {
                         let subject_stats = combat_stats.get_mut(entity).unwrap();
                         apply_ep_damage(subject_stats,*ep_cost);
@@ -114,6 +126,10 @@ impl<'a> System<'a> for ActionSystem {
                 Action{ command: WaitCommand(w), target: None, cost: ep_cost, .. } => {
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
                     // TODO: wait move ep recovery
+                    if *ep_cost != 0 && subject_stats.ep != subject_stats.max_ep {
+                        let ep_string = format!("{}", *ep_cost).replace("-","");
+                        log.entries.push(format!("{} recovers {} ep.", &name.name, ep_string));
+                    }
                     rest_or_default(&mut subject_stats, *w, *ep_cost);
                     if subject_stats.stance != Stun {
                         subject_stats.stance = action.stance_after;
@@ -158,15 +174,18 @@ pub fn apply_hp_damage( stats: &mut CombatStats, amount: i32) {
 
 pub fn apply_ep_damage( stats: &mut CombatStats, amount: i32) {
     if stats.stance == CombatStance::Stun {
-        stats.ep = 0;
-        // TODO: fix, this isn't right for monsters
-        stats.stance = CombatStance::Ready;
+        if stats.ep < 0 && amount < 0 { 
+            stats.ep = 0;
+        } else if amount < 0 {
+            stats.ep -= amount;
+            stats.stance = CombatStance::Ready
+        }
     } else {
-        stats.ep -= amount;
-    }
-    if stats.ep < 0 {
-        stats.stance = CombatStance::Stun;
-    }
+        stats.ep -= amount;        
+        if stats.ep < 0 {
+            stats.stance = CombatStance::Stun;
+        }    
+    } 
     if stats.ep >= stats.max_ep {
         stats.ep = stats.max_ep;
     }
@@ -231,20 +250,6 @@ pub fn delete_the_dead(ecs : &mut World) {
                         }                         
                     }
                 }
-            }
-            match player {
-                Some(_) => {
-                    if map.tiles[map.xy_idx(position.x, position.y)] == TileType::StairsDown {
-                        let mut runstate = ecs.write_resource::<RunState>();
-                        if *runstate != RunState::GameOver {
-                            log.entries.push(format!("You see stairs going deeper into the barrow..."));
-                            log.entries.push(format!("#[cyan](This is the end for now)#[]"));
-                            log.entries.push(format!("#[pink]Press ESCAPE to return to the menu"));
-                            *runstate = RunState::GameOver;    
-                        }
-                    }
-                },
-                _ => {}
             }
         }
     }

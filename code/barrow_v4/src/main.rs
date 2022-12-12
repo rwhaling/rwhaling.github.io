@@ -82,7 +82,7 @@ impl State {
                 spawner::goblin(&mut self.ecs, x, y);
             } else if i == last_room {
                 // console::log(format!("{} spawning goblin knight at {},{}", i, x, y));
-                spawner::goblin_knight(&mut self.ecs, x, y);
+                spawner::hobgoblin(&mut self.ecs, x, y);
             } else {
                 // console::log(format!("{} spawning monster at {},{}", i, x, y));
                 spawner::random_monster(&mut self.ecs, x, y);
@@ -193,6 +193,7 @@ fn main() -> rltk::BError {
         .with_title("Barrow")
         .build()?;
 
+    register_palette_color("grey", RGB::named(rltk::GREY));
     register_palette_color("pink", RGB::named(rltk::MAGENTA));
     register_palette_color("red", RGB::named(rltk::RED));
     register_palette_color("orange", RGB::named(rltk::ORANGE));
