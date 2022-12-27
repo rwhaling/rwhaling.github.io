@@ -15,7 +15,7 @@ pub struct Renderable {
     pub bg: RGB,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Copy, Clone)]
 pub struct Player {
     pub food: i32,
     pub max_food: i32,

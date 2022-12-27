@@ -91,13 +91,33 @@ pub fn try_descend(ecs: &World) -> RunState {
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
     if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsDown {
+        let next_level = map.depth + 1;
         log.entries.push(format!("You see descend deeper into the barrow..."));
-        log.entries.push(format!("#[cyan](This is the end for now)#[]"));
-        log.entries.push(format!("#[pink]Press ESCAPE to return to the menu"));
-        return RunState::GameOver;    
+        log.entries.push(format!("(loading level {})", next_level));
+        return RunState::Descend { depth: next_level };    
     } else {
         return RunState::AwaitingInput
     }    
+}
+
+pub fn try_ascend(ecs: &World) -> RunState {
+    let player_entity = ecs.read_resource::<Entity>();
+    let positions = ecs.read_storage::<Position>();
+    let map = ecs.read_resource::<Map>();
+    let mut log = ecs.write_resource::<GameLog>();
+
+    let player_pos = positions.get(*player_entity).unwrap();
+    console::log(format!("{:?} attempting to ascend at {:?}", *player_entity, player_pos));
+
+    let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
+
+    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsUp {
+        log.entries.push(format!("You see ascend up to town, but the barrow beckons you to return..."));
+        return RunState::Shopping { menu_selection: 0 };    
+    } else {
+        return RunState::AwaitingInput
+    }    
+
 }
 
 
@@ -310,6 +330,9 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
             VirtualKeyCode::N => return try_attack_menu(4, &gs.ecs),
             VirtualKeyCode::M => return try_attack_menu(5, &gs.ecs),
+
+            // Descend
+            VirtualKeyCode::Comma => return try_ascend(&gs.ecs),
 
             // Descend
             VirtualKeyCode::Period => return try_descend(&gs.ecs),

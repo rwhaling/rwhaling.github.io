@@ -27,8 +27,10 @@ mod spawner;
 pub enum RunState { 
     AwaitingInput, 
     PreRun, 
+    Descend { depth: i32 },
     PlayerTurn, 
     MonsterTurn,
+    Shopping { menu_selection : i32},
     MainMenu { menu_selection : gui::MainMenuSelection },
     GameOver
 }
@@ -50,17 +52,20 @@ impl State {
         self.ecs.maintain();
     }
 
-    fn load_level(&mut self, depth : i32, _player_stats: Option<CombatStats>) {
+    fn load_level(&mut self, depth : i32, player_inv: Option<&Player>) {
         let mut rng = RandomNumberGenerator::new();
 
         {
             let mut logs = self.ecs.write_resource::<GameLog>();
             if depth == 0 {
+                // TODO: fix, not appropriate after town
                 logs.entries.clear();
                 logs.entries.push(String::from("Welcome to Barrow!"));
             }    
         }
+        // Not sure about removing player, seems ok?
         let _old_player = self.ecs.remove::<Player>();
+
         let _old_map = self.ecs.remove::<Map>();
 
         let mut to_delete = Vec::new();
@@ -71,34 +76,25 @@ impl State {
             self.ecs.delete_entity(*del).expect("Deletion failed");
         }
 
-        let map : Map = Map::new_map_rooms_and_corridors();
+        let map : Map = Map::new_map_rooms_and_corridors(depth);
+
         let (player_x, player_y) = map.rooms[0].center();
     
-        let player_entity = spawner::player(&mut self.ecs, player_x, player_y, None);
-
-        let last_room = map.rooms.len() - 1;
-        for (i,room) in map.rooms.iter().enumerate().skip(1) {
-            let (x,y) = room.center();
-            if i == 1 {
-                // console::log(format!("{} spawning goblin at {},{}", i, x, y));
-                spawner::goblin(&mut self.ecs, x, y);
-            } else if i == last_room {
-                // console::log(format!("{} spawning goblin knight at {},{}", i, x, y));
-                spawner::hobgoblin(&mut self.ecs, x, y);
-            } else {
-                // console::log(format!("{} spawning monster at {},{}", i, x, y));
-
-                spawner::random_monster(&mut self.ecs, x, y);
-                let coin_x = (room.x1 + rng.roll_dice(1, i32::abs(room.x2 - room.x1)));
-                let coin_y = (room.y1 + rng.roll_dice(1, i32::abs(room.y2 - room.y1)));
-                // let idx = (y * MAPWIDTH) + x;
-                spawner::coins(&mut self.ecs, coin_x, coin_y, 10);
-
-            }
-        }
-
-        self.ecs.insert(map);
+        // self.ecs.insert::<Player>(player_inv);
+        let player_entity = spawner::player(&mut self.ecs, player_x, player_y, player_inv);
         self.ecs.insert(player_entity);    
+
+        if depth == 1 {
+            spawner::populate_level_1(&mut self.ecs, &mut rng, &map);
+        } else if depth == 2 {
+            spawner::populate_level_2(&mut self.ecs, &mut rng, &map);
+        } else {
+            spawner::populate_level_2(&mut self.ecs, &mut rng, &map);
+        }
+        
+        self.ecs.insert(map);
+
+
     }
 }
 
@@ -167,6 +163,37 @@ impl GameState for State {
                 self.ecs.maintain();
                 newrunstate = RunState::AwaitingInput;
             }
+            RunState::Shopping { .. } => {
+                // self.run_systems();
+                let result = gui::shopping(self, ctx);
+                match result {
+                    RunState::PreRun => {
+                        let player_inv:Player;
+                        {
+                            let player_entity = self.ecs.fetch::<Entity>();
+                            let players = self.ecs.write_storage::<Player>();    
+                            player_inv = *players.get(*player_entity).unwrap();
+                        }
+                    
+                        self.load_level(1, Some(&player_inv));
+                        newrunstate = result;
+                    }
+                    _ => {
+                        newrunstate = result;
+                    }
+                }
+            }
+            RunState::Descend{ depth: d } => {
+                let player_inv:Player;
+                {
+                    let player_entity = self.ecs.fetch::<Entity>();
+                    let players = self.ecs.write_storage::<Player>();    
+                    player_inv = *players.get(*player_entity).unwrap();
+                }
+
+                self.load_level(d, Some(&player_inv));
+                newrunstate = RunState::PreRun;
+            }
             RunState::MainMenu{ .. } => {
                 let result = gui::main_menu(self, ctx);
                 match result {
@@ -188,7 +215,7 @@ impl GameState for State {
                             let mut log = self.ecs.write_resource::<GameLog>();
                             log.entries.clear();
                         }
-                        self.load_level(0, None);
+                        self.load_level(1, None);
                         // self.game_over_cleanup();
                         newrunstate = RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame };
                     }
@@ -241,7 +268,7 @@ fn main() -> rltk::BError {
     gs.ecs.insert(gamelog::GameLog{ entries : vec![] });
 
     gs.ecs.insert(RunState::MainMenu{ menu_selection: gui::MainMenuSelection::NewGame });
-    gs.load_level(0,None);
+    gs.load_level(1,None);
 
     rltk::main_loop(context, gs)
 }

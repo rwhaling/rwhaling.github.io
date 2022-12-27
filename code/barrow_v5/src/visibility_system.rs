@@ -1,6 +1,8 @@
 use specs::prelude::*;
 use super::{Viewshed, Position, Map, Player};
 use rltk::{field_of_view, Point};
+use rltk::console;
+
 
 pub struct VisibilitySystem {}
 
@@ -23,6 +25,7 @@ impl<'a> System<'a> for VisibilitySystem {
                 // If this is the player, reveal what they can see
                 let _p : Option<&Player> = player.get(ent);
                 if let Some(_p) = _p {
+                    // console::log(format!("refreshing player viewshed at {:?}", pos));
                     for t in map.visible_tiles.iter_mut() { *t = false };
                     for vis in viewshed.visible_tiles.iter() {
                         let idx = map.xy_idx(vis.x, vis.y);

@@ -19,6 +19,7 @@ pub struct Map {
     pub rooms : Vec<Rect>,
     pub width : i32,
     pub height : i32,
+    pub depth: i32,
     pub revealed_tiles : Vec<bool>,
     pub visible_tiles : Vec<bool>,
     pub blocked : Vec<bool>,
@@ -79,7 +80,7 @@ impl Map {
 
     /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
     /// This gives a handful of random rooms and corridors joining them together.
-    pub fn new_map_rooms_and_corridors() -> Map {
+    pub fn new_map_rooms_and_corridors(depth: i32) -> Map {
         let mut rng = RandomNumberGenerator::new();
 
         let mut map = Map{
@@ -87,6 +88,7 @@ impl Map {
             rooms : Vec::new(),
             width : MAPWIDTH as i32,
             height: MAPHEIGHT as i32,
+            depth: depth,
             revealed_tiles : vec![false; MAPCOUNT],
             visible_tiles : vec![false; MAPCOUNT],
             blocked : vec![false; MAPCOUNT],
@@ -220,8 +222,7 @@ pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
 
             let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(x, y), player_pos);
             let dist_factor = 1.0 - ((distance - 3.0).max(0.0)/ 9.0) - (noise.get_noise3d(0.08 * x as f32, 0.08 * y as f32, 0.14 * map.frame_count as f32) * 0.1);
-            // console::log(format!("{},{} distance: {}, dist_factor: {}", x,y, distance, dist_factor));
-            
+            // console::log(format!("{},{} distance: {}, dist_factor: {}", x,y, distance, dist_factor));            
 
             match tile {
                 TileType::Floor => {

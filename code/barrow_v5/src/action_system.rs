@@ -244,10 +244,14 @@ pub fn move_regen(stats: &mut CombatStats) {
 pub fn rest_or_default(stats: &mut CombatStats, _wait_move: WaitMove, cost: i32, player: Option<&mut Player>) {
     if stats.current_target == None && player.is_some() && stats.hp < stats.max_hp {
         let p = player.unwrap();
-        apply_hp_damage(stats, stats.hp_regen);
-        apply_ep_damage(stats, cost);
-        // todo: checks, etc.
-        p.food = p.food - 1;
+        if p.food > 0 {
+            apply_hp_damage(stats, stats.hp_regen);
+            apply_ep_damage(stats, cost);
+            // todo: checks, etc.
+            p.food = p.food - 1;    
+        } else {
+            apply_ep_damage(stats, cost);
+        }
     } else {
         apply_ep_damage(stats, cost);
     }

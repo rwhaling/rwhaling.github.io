@@ -68,7 +68,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
         ctx.print_color(51, 3, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &items );
 
         if menu_y == 1 || menu_y == 2 || menu_y == 3 {
-            info_popup = Some(monster_tooltip(&name));
+            info_popup = Some(monster_tooltip(&name, &stats));
         }
 
         for (entity, _monster, monster_stats, name, position) in (&entities, &monsters, &combat_stats, &names, &positions).join() {
@@ -95,7 +95,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                         ctx.print_color(68, 4 + gui_offset, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &energy);
 
                         if menu_y == 3 + gui_offset || menu_y == 4 + gui_offset {
-                            info_popup = Some(monster_tooltip(&name.name));
+                            info_popup = Some(monster_tooltip(&name.name, &monster_stats));
                         }
                         target_offset += 1;
                         gui_offset += 2;
@@ -103,7 +103,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
                         let target_string = format!("{} {}", target_offset, name.name);
                         ctx.print(51, 3 + gui_offset, target_string);
                         if menu_y == 3 + gui_offset {
-                            info_popup = Some(monster_tooltip(&name.name));
+                            info_popup = Some(monster_tooltip(&name.name, &monster_stats));
                         }
                         target_offset += 1;
                         gui_offset += 1;
@@ -170,9 +170,9 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
     }
 }
 
-fn monster_tooltip(name: &String) -> String {
+fn monster_tooltip(name: &String, stats: &CombatStats) -> String {
     return match name.as_str() {
-        "Player" => String::from("Player\nThis is you."),
+        "Player" => format!("Player\nThis is you.\n{} attack\n{} defense", stats.power, stats.defense),
         "Goblin" => String::from("Goblin\nWeak and cowardly\nBlocking is very effective"),
         "Orc" => String::from("Orc\nAttacks fiercely, easily tired.\nFend is very effective."),
         "Goblin Knight" => String::from("Goblin Knight\nFormidable attack and defense.\nVulnerable when stamina is low\nGuard stance is vulnerable to \nsmash attacks"),
@@ -309,6 +309,105 @@ pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
     }
 
     MainMenuResult::NoSelection { selected: MainMenuSelection::NewGame }
+}
+
+pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> RunState {
+    let runstate = gs.ecs.fetch::<RunState>();
+    let player_entity = gs.ecs.fetch::<Entity>();
+    let mut players = gs.ecs.write_storage::<Player>();
+
+    let mut player_inv = players.get_mut(*player_entity).unwrap();
+
+    if let RunState::Shopping { menu_selection: selection } = *runstate {
+        let mut new_selection = selection;
+
+        let shopping_items: Vec<(&str, i32, bool, Player)> = vec![
+            ("$5 - buy more food", 5, false, {
+                let mut new_inv = player_inv.clone();
+                new_inv.food = new_inv.max_food;
+                new_inv
+            }),
+            ("$15 - buy pack upgrade", 10, false, {
+                let mut new_inv = player_inv.clone();
+                new_inv.max_food = new_inv.max_food + 15;
+                new_inv.food = new_inv.max_food;
+                new_inv
+            }),
+            ("$15 - buy weapon upgrade", 15, false, {
+                let mut new_inv = player_inv.clone();
+                new_inv.atk_bonus += 1;
+                new_inv
+            }),
+            ("$15 - buy armor upgrade", 15, false, {
+                let mut new_inv = player_inv.clone();
+                new_inv.def_bonus += 1;
+                new_inv
+            }),
+            ("return to the Barrow", 0, true, {
+                player_inv.clone()
+            }),
+        ];
+
+        let mut execute_selection = false;
+
+        match ctx.key { 
+            Some(VirtualKeyCode::Up) => {
+                new_selection = selection - 1;
+            }
+            Some(VirtualKeyCode::Down) => {
+                new_selection = selection + 1;
+            }
+            Some(VirtualKeyCode::Return) => {
+                console::log("executing?");
+                execute_selection = true;
+            }
+            _ => {}
+        }
+
+        if new_selection < 0 { new_selection = 0 }
+        else if new_selection >= shopping_items.len() as i32 { new_selection = 0 }
+
+        ctx.set_active_console(1);
+        ctx.draw_box(2,1,46,19,rltk::WHITE,rltk::BLACK);
+        
+        let menu_base = 2;
+        for (i,(description, cost, leave_town, result)) in shopping_items.iter().enumerate() {
+            let text_color = if i == new_selection as usize { 
+                RGB::named(rltk::YELLOW) 
+            } else { 
+                RGB::named(rltk::WHITE) 
+            };
+            let bg_color = RGB::named(rltk::BLACK);
+            ctx.print_color(4, menu_base + i, text_color, bg_color, description);
+            if execute_selection && i == new_selection as usize {
+                if *leave_town {
+                    console::log(format!("leaving"));
+                    return RunState::PreRun
+                } else {
+                    console::log(format!("attempting to purchase"));
+                    let mut new_inv = result.clone();
+                    if new_inv.coin >= *cost {
+                        
+                        new_inv.coin -= *cost;
+                        *player_inv = new_inv;
+                        return RunState::Shopping { menu_selection: 0 }
+                    } else {
+                        return RunState::Shopping { menu_selection: new_selection }
+                    }
+                }
+            }
+        }
+        // ctx.print_color(4, 2, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "You are shopping");
+        // ctx.print_color(4, 3, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Buy stuff");
+        // ctx.print_color(4, 4, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Return to the Barrow");
+    
+    
+        return RunState::Shopping { menu_selection: new_selection }    
+    } else {
+        return RunState::Shopping { menu_selection: 0 }    
+
+    }
+
 }
 
 pub fn game_over(ctx : &mut Rltk) -> GameOverResult {
