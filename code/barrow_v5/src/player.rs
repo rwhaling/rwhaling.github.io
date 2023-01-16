@@ -83,17 +83,22 @@ pub fn try_descend(ecs: &World) -> RunState {
     let player_entity = ecs.read_resource::<Entity>();
     let positions = ecs.read_storage::<Position>();
     let map = ecs.read_resource::<Map>();
+    let mut player_res = ecs.write_storage::<Player>();
+
     let mut log = ecs.write_resource::<GameLog>();
 
     let player_pos = positions.get(*player_entity).unwrap();
+    let mut player = player_res.get_mut(*player_entity).unwrap();
     console::log(format!("{:?} attempting to descend at {:?}", *player_entity, player_pos));
 
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
     if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsDown {
         let next_level = map.depth + 1;
-        log.entries.push(format!("You see descend deeper into the barrow..."));
+        log.entries.push(format!("You descend deeper into the barrow..."));
         log.entries.push(format!("(loading level {})", next_level));
+        player.deepest_level = next_level;
+
         return RunState::Descend { depth: next_level };    
     } else {
         return RunState::AwaitingInput
@@ -104,20 +109,68 @@ pub fn try_ascend(ecs: &World) -> RunState {
     let player_entity = ecs.read_resource::<Entity>();
     let positions = ecs.read_storage::<Position>();
     let map = ecs.read_resource::<Map>();
+    let player_res = ecs.read_storage::<Player>();
+
     let mut log = ecs.write_resource::<GameLog>();
 
     let player_pos = positions.get(*player_entity).unwrap();
+    let player = player_res.get(*player_entity).unwrap();
     console::log(format!("{:?} attempting to ascend at {:?}", *player_entity, player_pos));
 
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
     if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsUp {
-        log.entries.push(format!("You see ascend up to town, but the barrow beckons you to return..."));
-        return RunState::Shopping { menu_selection: 0 };    
+        if player.has_amulet {
+            let next_level = map.depth - 1;
+            if next_level > 0 {
+                log.entries.push(format!("You ascend toward town, but the amulet's darkness pervades your mind..."));
+                log.entries.push(format!("(loading level {})", next_level));
+            }
+            console::log(format!("ascending to {} with amulet", next_level));
+            return RunState::Ascend { depth: next_level }
+
+        } else {
+            let next_level = map.depth - 1;
+            if next_level > 0 {
+                log.entries.push(format!("You retreat from the depths (loading level {})", next_level));
+            } else {
+                log.entries.push(format!("You ascend toward town, but the barrow beckons you to return..."));
+            }
+            console::log(format!("ascending to {}", next_level));
+            return RunState::Ascend { depth: next_level }
+            // return RunState::Shopping { menu_selection: 0 };        
+        }
     } else {
         return RunState::AwaitingInput
     }    
+}
 
+pub fn try_quick_ascend(ecs: &World) -> RunState {
+    let player_entity = ecs.read_resource::<Entity>();
+    let positions = ecs.read_storage::<Position>();
+    let map = ecs.read_resource::<Map>();
+    let player_res = ecs.read_storage::<Player>();
+    let mut log = ecs.write_resource::<GameLog>();
+
+    let player_pos = positions.get(*player_entity).unwrap();
+    let player = player_res.get(*player_entity).unwrap();
+    console::log(format!("{:?} attempting to quick ascend at {:?}", *player_entity, player_pos));
+
+    let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
+
+    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsUp {
+        if player.has_amulet {
+            log.entries.push(format!("The amulet's darkness is a heavy burden as you return to the barrow's entrance\n(cannot quick ascend, try regular ascend)"));
+            console::log(format!("cannot quick ascend"));
+            return RunState::AwaitingInput;
+        } else {
+            log.entries.push(format!("You quickly ascend to town, but the barrow beckons you to return..."));
+            console::log(format!("quick ascending to town"));
+            return RunState::Ascend { depth: 0 }                
+        }
+    } else {
+        return RunState::AwaitingInput
+    }    
 }
 
 
@@ -331,8 +384,13 @@ pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
             VirtualKeyCode::N => return try_attack_menu(4, &gs.ecs),
             VirtualKeyCode::M => return try_attack_menu(5, &gs.ecs),
 
-            // Descend
-            VirtualKeyCode::Comma => return try_ascend(&gs.ecs),
+            // Ascend
+            VirtualKeyCode::Comma => {
+                return try_ascend(&gs.ecs)
+            },
+            VirtualKeyCode::T => {
+                return try_quick_ascend(&gs.ecs)
+            }
 
             // Descend
             VirtualKeyCode::Period => return try_descend(&gs.ecs),

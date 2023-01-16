@@ -15,7 +15,7 @@ pub struct Renderable {
     pub bg: RGB,
 }
 
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, PartialEq, Debug, Copy, Clone)]
 pub struct Player {
     pub food: i32,
     pub max_food: i32,
@@ -23,19 +23,34 @@ pub struct Player {
     pub potions: i32,
     pub atk_bonus: i32,
     pub def_bonus: i32,
+    pub deepest_level: i32,
     pub has_amulet: bool
+}
+
+#[derive(Debug)]
+pub enum Containers {
+    Treasure,
+    Barrel
+}
+
+#[derive(Component, Debug)]
+pub struct Container {
+    pub container: Containers,
+    pub tag: u64
 }
 
 #[derive(Debug)]
 pub enum Items {
     Coin(i32),
     Food(i32),
-    Potion
+    Potion,
+    Amulet
 }
 
 #[derive(Component, Debug)]
 pub struct Item {
-    pub item: Items
+    pub item: Items,
+    pub tag: u64
 }
 
 #[derive(Component)]
@@ -46,7 +61,9 @@ pub struct Viewshed {
 }
 
 #[derive(Component, Debug)]
-pub struct Monster {}
+pub struct Monster {
+    pub tag: u64
+}
 
 #[derive(Component, Debug)]
 pub struct Name {

@@ -1,5 +1,6 @@
 use specs::prelude::*;
-use super::{CombatStats, Action, WaitMove, CombatStance, Item, Items, Name, Player, Position, gamelog::GameLog, RunState, Map, TileType, Viewshed};
+use super::{CombatStats, Action, WaitMove, CombatStance, Container, Containers, Item, Items, Name, Player, Position, gamelog::GameLog, RunState, Map, TileType, Viewshed};
+use super::Containers::*;
 use super::Items::*;
 use super::Command::*;
 use super::AttackMove::*;
@@ -23,11 +24,12 @@ impl<'a> System<'a> for ActionSystem {
                         WriteStorage<'a, Position>,
                         WriteStorage<'a, Viewshed>,
                         WriteExpect<'a, rltk::RandomNumberGenerator>,
-                        WriteStorage<'a, Item>
+                        WriteStorage<'a, Item>,
+                        WriteStorage<'a, Container>
                     );
 
     fn run(&mut self, data : Self::SystemData) {
-        let (entities, player_entity, mut log, mut actions, names, mut player, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng, mut items) = data;
+        let (entities, player_entity, mut log, mut actions, names, mut player, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng, mut items, mut containers) = data;
 
         for (entity, name, action) in (&entities, &names, &actions).join() {
             let eff_action: Action;
@@ -40,7 +42,7 @@ impl<'a> System<'a> for ActionSystem {
                     let a = &Action { command: WaitCommand(Wait), cost: -10, stance_after: subject_stats.stance, target: None, position: None };
                     eff_action = *a;
                     // return
-                }    
+                }
                 else if action.cost > subject_stats.ep {
                     log.entries.push(format!("#[yellow]{}#[] has insufficient ep, recovering...", &name.name));    
                     // TODO: user proper command/regen
@@ -74,7 +76,7 @@ impl<'a> System<'a> for ActionSystem {
                     let eff_pow = subject_stats.power + pow_adj;
                     let def_adj = match (a, target_last_command) {
                         // TODO: fill out
-                        (_, Some(WaitCommand(Block))) => 1,
+                        (_, Some(WaitCommand(Block))) => 2,
                         (Smash, Some(WaitCommand(Fend))) => 3,
                         (_, Some(WaitCommand(Fend))) => 1,
                         (_, _) => 0 
@@ -154,39 +156,80 @@ impl<'a> System<'a> for ActionSystem {
                 Action{ command: MoveCommand, target: None, position: Some(Position {x,y}), .. } => {
                     let mut pos = positions.get_mut(entity).unwrap();
                     let mut viewshed = viewsheds.get_mut(entity).unwrap();
-                    pos.x = *x;
-                    pos.y = *y;
-
-                    let idx = map.xy_idx(pos.x, pos.y);
-                    if entity != *player_entity {
-                        map.blocked[idx] = true;
-                    }
-                    viewshed.dirty = true;
-
-                    let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
-                    // TODO: move ep regen?
-                    move_regen(&mut subject_stats);
-                    subject_stats.stance = action.stance_after;
-                    subject_stats.last_command = Some(MoveCommand);
-
-                    // check new tile contents
                     let mut p = player.get_mut(entity);
-                    if p.is_some() {
-                        let mut player_inv = p.unwrap();
+
+                    let mut container_open = false;
+
+                    {
                         let contents = &map.tile_content[map.xy_idx(*x,*y)];
                         for c in contents {
-                            let i = items.get(*c);
-                            console::log(format!("tile contents: {:?}", i));
-                            match i { 
-                                Some(Item { item: Coin(i) } ) => { 
-                                    log.entries.push(format!("You pick up {} coins from the ground.", i));
-                                    player_inv.coin = player_inv.coin + i;
+                            let container = containers.get(*c);
+                            match container { 
+                                Some(Container { container: Barrel, .. } ) => {
+                                    container_open = true;
+                                    log.entries.push(format!("{} smashes the barrel.", &name.name));
                                     entities.delete(*c).expect("Unable to delete");
                                 }
+                                Some(Container { container: Treasure, .. } ) => {
+                                    container_open = true;
+                                    log.entries.push(format!("{} opens the treasure chest!", &name.name));
+                                    entities.delete(*c).expect("Unable to delete");
+                                }
+
                                 _ => {}
                             }
                         }
                     }
+
+                    if !container_open {
+                        pos.x = *x;
+                        pos.y = *y;
+    
+                        let idx = map.xy_idx(pos.x, pos.y);
+                        if entity != *player_entity {
+                            map.blocked[idx] = true;
+                        }
+                        viewshed.dirty = true;
+    
+                        let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
+                        // TODO: move ep regen?
+                        move_regen(&mut subject_stats);
+                        subject_stats.stance = action.stance_after;
+                        subject_stats.last_command = Some(MoveCommand);
+    
+                        // check new tile contents
+                        if p.is_some() {
+                            let mut player_inv = p.unwrap();
+                            let contents = &map.tile_content[map.xy_idx(*x,*y)];
+                            // let contents = &map.tile_content[map.xy_idx(*x,*y)];
+                            // console::log(format!("tile contents: {:?}", contents));
+                            for c in contents {
+                                {
+                                    let i = items.get(*c);
+                                    match i { 
+                                        Some(Item { item: Coin(i), .. } ) => { 
+                                            log.entries.push(format!("You pick up {} coins from the ground.", i));
+                                            player_inv.coin = player_inv.coin + i;
+                                            entities.delete(*c).expect("Unable to delete");
+                                        }
+                                        Some(Item { item: Amulet, ..}) => {
+                                            log.entries.push(format!("You take the Amulet of Yendor, and feel its dark power course through your body."));
+                                            log.entries.push(format!("Now you must escape the dungeon before the darkness consumes you!"));
+                                            player_inv.has_amulet = true;
+                                            player_inv.atk_bonus = 6;
+                                            player_inv.def_bonus = 6;
+                                            subject_stats.hp = subject_stats.max_hp;
+                                            subject_stats.power = 10;
+                                            subject_stats.defense = 6;
+                                            entities.delete(*c).expect("Unable to delete");
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }    
+                    }
+
                 }
                 _ => {
                     log.entries.push(format!("Anomaly: {} has an incoherent intent", name.name));

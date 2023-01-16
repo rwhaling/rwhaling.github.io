@@ -24,7 +24,7 @@ pub struct Map {
     pub visible_tiles : Vec<bool>,
     pub blocked : Vec<bool>,
     pub tile_content : Vec<Vec<Entity>>,
-    pub noise_seed : u64,
+    pub seed : u64,
     pub frame_count : u64
 }
 
@@ -80,8 +80,8 @@ impl Map {
 
     /// Makes a new map using the algorithm from http://rogueliketutorials.com/tutorials/tcod/part-3/
     /// This gives a handful of random rooms and corridors joining them together.
-    pub fn new_map_rooms_and_corridors(depth: i32) -> Map {
-        let mut rng = RandomNumberGenerator::new();
+    pub fn new_map_rooms_and_corridors(depth: i32, seed:u64) -> Map {
+        let mut rng = RandomNumberGenerator::seeded(seed);
 
         let mut map = Map{
             tiles : vec![TileType::Wall; MAPCOUNT],
@@ -93,7 +93,7 @@ impl Map {
             visible_tiles : vec![false; MAPCOUNT],
             blocked : vec![false; MAPCOUNT],
             tile_content : vec![Vec::new(); MAPCOUNT],
-            noise_seed : 0,
+            seed : seed,
             frame_count : 0
         };
 
@@ -143,6 +143,7 @@ impl Map {
         // let mut spawn_rooms = map.rooms.clone();
         map.rooms.sort_by(&cmp_room_dist);
 
+        // consider moving this out to the loader
         let stairs_up_position = first_room_center;
         let stairs_up_idx = map.xy_idx(stairs_up_position.0, stairs_up_position.1);
         map.tiles[stairs_up_idx] = TileType::StairsUp;
@@ -205,7 +206,7 @@ pub fn draw_map(ecs: &World, ctx : &mut Rltk) {
     let player_ent_pos = positions.get(*player_ent).unwrap();
     let player_pos = Point::new(player_ent_pos.x,player_ent_pos.y);
 
-    noise.set_seed(map.noise_seed);
+    noise.set_seed(map.seed);
 
     map.frame_count += 1;
 

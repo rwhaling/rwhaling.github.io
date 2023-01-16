@@ -7,13 +7,24 @@ use super::Command::*;
 use super::AttackMove::*;
 use super::WaitMove::*;
 use super::CombatStance::*;
+use ShoppingResult::*;
 use bracket_terminal::prelude::TextAlign;
 
 #[derive(PartialEq, Copy, Clone)]
-pub enum MainMenuSelection { NewGame, Quit }
+pub enum MainMenuSelection { NewGame, Quit, CheatMode }
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum MainMenuResult { NoSelection{ selected : MainMenuSelection }, Selected{ selected: MainMenuSelection } }
+
+#[derive(PartialEq, Copy, Clone)]
+pub enum ShoppingResult { Selected{ selected: i32 }, Purchase{ new_state: Player }, LongRest, Return, Deepest }
+
+#[derive(PartialEq, Copy, Clone)]
+pub struct ShoppingMenuItem { 
+    pub description: &'static str,
+    pub cost: i32,
+    pub result: ShoppingResult
+}
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum GameOverResult { NoSelection, QuitToMenu }
@@ -46,7 +57,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
 
     for (player, stats) in (&players, &combat_stats).join() {
         let health = format!("HP:{}/{} ", stats.hp, stats.max_hp);
-        let name = format!("Player");
+        let name = format!("You");
         ctx.print_color(51, 1, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &name);
         ctx.draw_bar_horizontal(65, 1, 16, stats.hp, stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
         ctx.print_color(68, 1, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
@@ -118,8 +129,10 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
         ctx.print(51, 3 + gui_offset, format!("(ASDW) Move                 "));
         ctx.print(51, 4 + gui_offset, format!("(QEZC) Diag. Move           "));
         ctx.print(51, 5 + gui_offset, format!("(.)    Descend              "));
+        ctx.print(51, 6 + gui_offset, format!("(,)    Ascend               "));
+        ctx.print(51, 7 + gui_offset, format!("(T)    Return to Town       "));
 
-        gui_offset += 6;
+        gui_offset += 9;
 
         let moves : Vec<MenuCommand> = get_available_moves(&stats);
         let mut move_offset = 0;
@@ -172,10 +185,14 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
 
 fn monster_tooltip(name: &String, stats: &CombatStats) -> String {
     return match name.as_str() {
-        "Player" => format!("Player\nThis is you.\n{} attack\n{} defense", stats.power, stats.defense),
-        "Goblin" => String::from("Goblin\nWeak and cowardly\nBlocking is very effective"),
-        "Orc" => String::from("Orc\nAttacks fiercely, easily tired.\nFend is very effective."),
-        "Goblin Knight" => String::from("Goblin Knight\nFormidable attack and defense.\nVulnerable when stamina is low\nGuard stance is vulnerable to \nsmash attacks"),
+        "You" => format!("Player\nThis is you.\nDrawn by legendary riches, \narmed with sword and shield\n{} attack\n{} defense", stats.power, stats.defense),
+        "Goblin" => String::from("Goblin\nWeak and cowardly, but numerous\nThoroughly disagreeable\nBlocking is very effective"),
+        "Orc" => String::from("Orc\nAttacks fiercely, easily tired.\nFerocious, not to be underestimated\nFend is very effective."),
+        "Goblin Knight" => String::from("Goblin Knight\nFormidable attack and defense.\nVulnerable when stamina is low\nGuard stance is vulnerable to \n shield bash attacks"),
+        "Kobold" => String::from("Kobold\nDangerous, especially in packs\nSworn to protect the barrow\nBring your strongest equipment"),
+        "Hobgoblin" => String::from("Hobgoblin\nCunning and well-armed\nStrong defense\nVulnerable to shield bashes \nwhen stamina is low"),
+        "Troll" => String::from("Troll\nBrutish, deadly, albeit dim\nPowerful attacks, low stamina\nFend off its smash attacks, \nretaliate when stamina is low"),
+        "Barrow-Lord" => String::from("Aye, Yendor, lord of the Barrow\nHe lives, or something like it\nA profoundly dangerous opponent, \nanimated by dark energies\nPatient and methodical.\nwait for him to expose himself - \nthen strike!"),
         _ => name.clone()
     }
 }
@@ -184,13 +201,13 @@ fn command_tooltip(command: &MenuCommand) -> String {
     let command_str = match command.command {
         AttackCommand(Melee) => { format!("Melee attack\nZero cost, low damage.\nEasily blocked or fended.")},
         AttackCommand(Slash) => { format!("Slash\nPowerful attack, no stamina damage")},
-        AttackCommand(Smash) => { format!("Smash\nHigh cost\nVery Powerful attack\nDamages stamina\nResisted by Fend")},
-        AttackCommand(Bash) => { format!("Bash\nHigh cost\nDamages stamina\nResisted by Block\n")},
+        AttackCommand(Smash) => { format!("Smash\nHigh cost\nVery powerful attack\nDamages stamina\nResisted by Fend")},
+        AttackCommand(Bash) => { format!("Bash\nHigh cost\nDamages stamina\nStrong against Guard stance\n")},
         AttackCommand(Poke) => { format!("Poke\nModerate cost\nMaintains guard.")},
 
-        WaitCommand(Wait) => { format!("Wait\nRecover 10 EP\nRecover HP if not in combat") },
-        WaitCommand(Fend) => { format!("Fend\nZero cost\nModerate defense bonus\nHighly effective against Smash") },
-        WaitCommand(Block) => { format!("Block\nHighly resilient.\nWeak against Smash\nStrong against Bash") },
+        WaitCommand(Wait) => { format!("Wait\nRecover 10 EP\nRecover HP if not in combat\nConsumes food when recovering HP") },
+        WaitCommand(Fend) => { format!("Fend\nZero cost\nModerate defense bonus\nHighly effective against Smash/Power Stance") },
+        WaitCommand(Block) => { format!("Block\nHighly resilient.\nWeak against Smash\nStrong against regular attacks") },
         WaitCommand(Brace) => { format!("Brace\nTake the hit.\nRecover 5 EP\nRemain in Power Stance") },
 
         MoveCommand => { format!("") }
@@ -280,6 +297,17 @@ pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
             ctx.print_color_centered(13, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Quit");
         }
 
+        if gs.cheat_mode == true {
+            ctx.print_color_centered(14, RGB::named(rltk::RED), RGB::named(rltk::BLACK), "CHEAT MODE ENABLED");
+        }
+        else if selection == MainMenuSelection::CheatMode {
+            ctx.print_color_centered(14, RGB::named(rltk::MAGENTA), RGB::named(rltk::BLACK), "Enable Cheat Mode (press Enter)");
+        } else {
+            ctx.print_color_centered(14, RGB::from_u8(30,30,30), RGB::named(rltk::BLACK), "Enable Cheat Mode");
+
+        }
+
+
         match ctx.key {
             None => return MainMenuResult::NoSelection{ selected: selection },
             Some(key) => {
@@ -288,8 +316,10 @@ pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
                     VirtualKeyCode::Up => {
                         let newselection;
                         match selection {
-                            MainMenuSelection::NewGame => newselection = MainMenuSelection::Quit,
-                            MainMenuSelection::Quit => newselection = MainMenuSelection::NewGame
+                            MainMenuSelection::NewGame => newselection = MainMenuSelection::CheatMode,
+                            MainMenuSelection::Quit => newselection = MainMenuSelection::NewGame,
+                            MainMenuSelection::CheatMode => newselection = MainMenuSelection::Quit
+
                         }
                         return MainMenuResult::NoSelection{ selected: newselection }
                     }
@@ -297,7 +327,9 @@ pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
                         let newselection;
                         match selection {
                             MainMenuSelection::NewGame => newselection = MainMenuSelection::Quit,
-                            MainMenuSelection::Quit => newselection = MainMenuSelection::NewGame
+                            MainMenuSelection::Quit => newselection = MainMenuSelection::CheatMode,
+                            MainMenuSelection::CheatMode => newselection = MainMenuSelection::NewGame
+
                         }
                         return MainMenuResult::NoSelection{ selected: newselection }
                     }
@@ -311,7 +343,7 @@ pub fn main_menu(gs : &mut State, ctx : &mut Rltk) -> MainMenuResult {
     MainMenuResult::NoSelection { selected: MainMenuSelection::NewGame }
 }
 
-pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> RunState {
+pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> ShoppingResult {
     let runstate = gs.ecs.fetch::<RunState>();
     let player_entity = gs.ecs.fetch::<Entity>();
     let mut players = gs.ecs.write_storage::<Player>();
@@ -320,33 +352,134 @@ pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> RunState {
 
     if let RunState::Shopping { menu_selection: selection } = *runstate {
         let mut new_selection = selection;
+        
+        let mut shopping_menu_items: Vec<ShoppingMenuItem> = vec![];
 
-        let shopping_items: Vec<(&str, i32, bool, Player)> = vec![
-            ("$5 - buy more food", 5, false, {
-                let mut new_inv = player_inv.clone();
-                new_inv.food = new_inv.max_food;
-                new_inv
-            }),
-            ("$15 - buy pack upgrade", 10, false, {
-                let mut new_inv = player_inv.clone();
-                new_inv.max_food = new_inv.max_food + 15;
-                new_inv.food = new_inv.max_food;
-                new_inv
-            }),
-            ("$15 - buy weapon upgrade", 15, false, {
-                let mut new_inv = player_inv.clone();
-                new_inv.atk_bonus += 1;
-                new_inv
-            }),
-            ("$15 - buy armor upgrade", 15, false, {
-                let mut new_inv = player_inv.clone();
-                new_inv.def_bonus += 1;
-                new_inv
-            }),
-            ("return to the Barrow", 0, true, {
-                player_inv.clone()
-            }),
-        ];
+        let food_to_buy = player_inv.max_food - player_inv.food;
+
+        if food_to_buy > 0 {
+            let food_cost = food_to_buy / 5;
+            let mut new_state = player_inv.clone();
+            new_state.food = new_state.max_food;
+
+            shopping_menu_items.push(ShoppingMenuItem { 
+                    description: "buy more food", 
+                    cost: food_cost, 
+                    result: Purchase { new_state: new_state }
+            });
+        }
+
+        if player_inv.max_food < 25 {
+            let pack_upgrade_cost = 15;
+            let mut new_state = player_inv.clone();
+            new_state.max_food = 25;
+            new_state.food = new_state.max_food;            
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy pack upgrade (25)",
+                cost: pack_upgrade_cost,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.max_food < 35 {
+            let pack_upgrade_cost = 45;
+            let mut new_state = player_inv.clone();
+            new_state.max_food = 35;
+            new_state.food = new_state.max_food;            
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy pack upgrade (35)",
+                cost: pack_upgrade_cost,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.max_food < 40 {
+            let pack_upgrade_cost = 65;
+            let mut new_state = player_inv.clone();
+            new_state.max_food = 40;
+            new_state.food = new_state.max_food;            
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy pack upgrade (40)",
+                cost: pack_upgrade_cost,
+                result: Purchase { new_state: new_state }
+            })
+        }
+
+        if player_inv.atk_bonus == 0 {
+            let mut new_state = player_inv.clone();
+            new_state.atk_bonus = 1;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +1 weapon upgrade",
+                cost: 20,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.atk_bonus == 1 {
+            let mut new_state = player_inv.clone();
+            new_state.atk_bonus = 2;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +2 weapon upgrade",
+                cost: 40,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.atk_bonus == 2 {
+            let mut new_state = player_inv.clone();
+            new_state.atk_bonus = 3;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +3 weapon upgrade",
+                cost: 75,
+                result: Purchase { new_state: new_state }
+            })
+        }
+
+        if player_inv.def_bonus == 0 {
+            let mut new_state = player_inv.clone();
+            new_state.def_bonus = 1;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +1 armor upgrade",
+                cost: 25,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.def_bonus == 1 {
+            let mut new_state = player_inv.clone();
+            new_state.def_bonus = 2;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +2 armor upgrade",
+                cost: 50,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.def_bonus == 2 {
+            let mut new_state = player_inv.clone();
+            new_state.def_bonus = 3;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +3 armor upgrade",
+                cost: 80,
+                result: Purchase { new_state: new_state }
+            })
+        } else if player_inv.def_bonus == 3 {
+            let mut new_state = player_inv.clone();
+            new_state.def_bonus = 4;
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "buy +4 armor upgrade",
+                cost: 120,
+                result: Purchase { new_state: new_state }
+            })
+        }
+
+        shopping_menu_items.push(ShoppingMenuItem {
+            description: "take a long rest",
+            cost: 2,
+            result: LongRest
+        });
+
+        shopping_menu_items.push(ShoppingMenuItem {        
+            description: "return to the barrow entrance", 
+            cost: 0, 
+            result: Return
+        });
+
+        if player_inv.deepest_level > 1 {
+            shopping_menu_items.push(ShoppingMenuItem {
+                description: "descend to the depths of the barrow",
+                cost: 0,
+                result: Deepest
+            });
+        }
 
         let mut execute_selection = false;
 
@@ -364,48 +497,58 @@ pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> RunState {
             _ => {}
         }
 
-        if new_selection < 0 { new_selection = 0 }
-        else if new_selection >= shopping_items.len() as i32 { new_selection = 0 }
+        if new_selection < 0 { new_selection = shopping_menu_items.len() as i32 - 1 }
+        else if new_selection >= shopping_menu_items.len() as i32 { new_selection = 0 }
 
         ctx.set_active_console(1);
         ctx.draw_box(2,1,46,19,rltk::WHITE,rltk::BLACK);
         
         let menu_base = 2;
-        for (i,(description, cost, leave_town, result)) in shopping_items.iter().enumerate() {
+
+        for (i,menu_item) in shopping_menu_items.iter().enumerate() {
             let text_color = if i == new_selection as usize { 
                 RGB::named(rltk::YELLOW) 
             } else { 
                 RGB::named(rltk::WHITE) 
             };
             let bg_color = RGB::named(rltk::BLACK);
-            ctx.print_color(4, menu_base + i, text_color, bg_color, description);
+            let menu_text = if menu_item.cost > 0  { 
+                format!("${} - {}", menu_item.cost, menu_item.description) 
+            } else {
+                menu_item.description.to_string()
+            };
+            ctx.print_color(4, menu_base + i, text_color, bg_color, menu_text);
             if execute_selection && i == new_selection as usize {
-                if *leave_town {
-                    console::log(format!("leaving"));
-                    return RunState::PreRun
-                } else {
-                    console::log(format!("attempting to purchase"));
-                    let mut new_inv = result.clone();
-                    if new_inv.coin >= *cost {
+                match menu_item.result {
+                    Return => {
+                        console::log("returning to the barrow");
+                        return Return
+                    }
+                    Purchase { new_state: new_state } => {
+                        let mut new_inv = new_state.clone();
+                        console::log("checking purchase");
+                        if new_inv.coin >= menu_item.cost {
+                            console::log("purchasing");
+                            new_inv.coin -= menu_item.cost;
+                            *player_inv = new_inv;
+                            return menu_item.result
+                        } else {
+                            console::log("not enough coin");
+                            // return RunState::Shopping { menu_selection: new_selection }
+                            return Selected { selected: 0 }
+                        }
                         
-                        new_inv.coin -= *cost;
-                        *player_inv = new_inv;
-                        return RunState::Shopping { menu_selection: 0 }
-                    } else {
-                        return RunState::Shopping { menu_selection: new_selection }
+                    }
+                    _ => {
+                        console::log("not yet implemented");
+                        return menu_item.result
                     }
                 }
             }
         }
-        // ctx.print_color(4, 2, RGB::named(rltk::YELLOW), RGB::named(rltk::BLACK), "You are shopping");
-        // ctx.print_color(4, 3, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Buy stuff");
-        // ctx.print_color(4, 4, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), "Return to the Barrow");
-    
-    
-        return RunState::Shopping { menu_selection: new_selection }    
+        return Selected { selected: new_selection }
     } else {
-        return RunState::Shopping { menu_selection: 0 }    
-
+        return Selected { selected: 0 }    
     }
 
 }
