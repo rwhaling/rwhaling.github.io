@@ -7,7 +7,7 @@
 
     
     <title>
-         About
+         Barrow, v5 (final?)
         
     </title>
     
@@ -75,10 +75,10 @@
 <main>
     <article>
         <div class="title">
-            <h1 class="title">About</h1>
+            <h1 class="title">Barrow, v5 (final?)</h1>
             <div class="meta">
                 
-                on  2022-05-12
+                on  2023-01-16
 
                 
             </div>
@@ -87,12 +87,20 @@
         
 
         <section class="body">
-            <p>Hi - my name's Richard Whaling. I grew up in Houston, Texas, I live in Chicago, Illinois.  I'm an engineer, writer, and musician, probably in that order. </p>
-<p>I wrote a book, <a href="https://pragprog.com/titles/rwscala/modern-systems-programming-with-scala-native/">&quot;Modern Systems Programming with Scala Native&quot;</a>, available from PragProg: </p>
-<p>I also made <a href="https://rustedtonerecordings.bandcamp.com/album/entropy">&quot;Entropy&quot;</a>, a cassette tape of generative modular synthesizer recordings: </p>
-<p>Technically speaking - my original passion is concurrent systems programming and database guts, but I've drifted into distributed systems and data for the most part.</p>
-<p>And to be entirely transparent - I'm at the stage of my career where I could drift away from my technical passions, and become a pure bureaucrat - part of what drove me to set up this post is the recognition that I don't want that, and that side-projects like these are the best way for me to hone my technical edge.</p>
-
+            <p>I think it's done, or at least ready to play.</p>
+<p>What is Barrow?  A minimalist roguelike with traditionalist impulses and a modern approach to 
+accessibility and quality-of-life.</p>
+<p>Explore the dungeon, kill monsters, find gold, go to town, buy stuff, go deeper, get more gold, buy more stuff, beat the boss, get his treasure (hint: it's an amulet) and escape back to town alive.</p>
+<p>Barrow allows bump-to-attack combat, but the monsters will punish you for carelessness. Manage your stamina, and use powerful special moves and defensive maneuvers to overcome the obstacles in your path.</p>
+<p>Don't forget to heal - healing consumes food.  If you need more food, go back to town buy heading upstairs from the starting point, or hitting T at any upwards staircase from deeper levels.</p>
+<p>Finally - there are tooltips - just hover over any monster or action on the right-hand menu.  There is also a list of hints and tips, some spoiler/cheat level, <a href="../barrow-hints">here</a></p>
+<p><canvas id="canvas" width="640" height="480"></canvas></p>
+<script src="./wasm/barrow_v5.js"></script>
+<script>
+    window.addEventListener("load", async () => {
+    await wasm_bindgen("./wasm/barrow_v5_bg.wasm");
+    });
+</script>
         </section>
 
         

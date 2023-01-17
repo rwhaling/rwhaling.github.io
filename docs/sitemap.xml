@@ -14,7 +14,14 @@
         <loc>https://whaling.dev/page/2/</loc>
     </url>
     <url>
+        <loc>https://whaling.dev/page/3/</loc>
+    </url>
+    <url>
         <loc>https://whaling.dev/posts/</loc>
+    </url>
+    <url>
+        <loc>https://whaling.dev/posts/barrow-hints/</loc>
+        <lastmod>2023-01-15</lastmod>
     </url>
     <url>
         <loc>https://whaling.dev/posts/barrow-v3/</loc>
@@ -23,6 +30,10 @@
     <url>
         <loc>https://whaling.dev/posts/barrow-v4/</loc>
         <lastmod>2022-12-10</lastmod>
+    </url>
+    <url>
+        <loc>https://whaling.dev/posts/barrow-v5/</loc>
+        <lastmod>2023-01-16</lastmod>
     </url>
     <url>
         <loc>https://whaling.dev/posts/hello-world/</loc>
