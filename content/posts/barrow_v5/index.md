@@ -13,7 +13,7 @@ Explore the dungeon, kill monsters, find gold, go to town, buy stuff, go deeper,
 
 Barrow allows bump-to-attack combat, but the monsters will punish you for carelessness. Manage your stamina, and use powerful special moves and defensive maneuvers to overcome the obstacles in your path.
 
-Don't forget to heal - healing consumes food.  If you need more food, go back to town buy heading upstairs from the starting point, or hitting T at any upwards staircase from deeper levels.
+Don't forget to heal - healing consumes food.  If you need more food, go back to town by heading upstairs from the starting point, or hitting T at any upwards staircase from deeper levels.
 
 Finally - there are tooltips - just hover over any monster or action on the right-hand menu.  There is also a list of hints and tips, some spoiler/cheat level, [here](../barrow-hints)
 

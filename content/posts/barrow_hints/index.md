@@ -35,13 +35,14 @@ Advanced Hints
 - If your stamina is reduced below zero, you are stunned, and must recover
 - Exploiting Stun is a highly effective tactic against defensive enemies
 - Enemies' behavior varies dynamically based on their stamina
+- Every enemy has a hidden stamina threshold, and will recover when they are below that threshold.  Some enemies are conservative, others will burst you down as fast as they can.
 - When an enemy has low stamina, they are more likely to wait and recover
-- If you hold shift and press comma to ascend, you will return to town immediately
 - You can descend to the deepest level reached from town, even after a long rest
 
 Spoiler-level Tips
 - To defeat the hobgobling and goblin knight, use Bash to stun-lock them
-- To defeat the orc or troll, use fend until they exhaust themselves, then melee them
+- To defeat orcs, try using Smash attacks to deplete their stamina
+- To defeat the troll, use fend until it is exhausted, then melee
 - To defeat the final boss, use fend until his stamina is below 30, then melee
 - There is a cheat mode hidden on the main menu, just scroll down
 - Cheat mode starts you with enough coins to buy every upgrade, and lets you descend to level 4 immediately
