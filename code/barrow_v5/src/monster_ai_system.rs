@@ -1,7 +1,7 @@
 use specs::prelude::*;
 use super::{Viewshed, Monster, Map, Position, Action, CombatStats, RunState, SmartMonster};
 use super::Command::*;
-use super::AttackMove::*;
+// use super::AttackMove::*;
 use super::WaitMove::*;
 use super::CombatStance::*;
 use rltk::{Point};

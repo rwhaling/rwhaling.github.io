@@ -57,7 +57,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
 
     for (player, stats) in (&players, &combat_stats).join() {
         let health = format!("HP:{}/{} ", stats.hp, stats.max_hp);
-        let name = format!("You");
+        let name = format!("Player");
         ctx.print_color(51, 1, RGB::named(rltk::WHITE), RGB::named(rltk::BLACK), &name);
         ctx.draw_bar_horizontal(65, 1, 16, stats.hp, stats.max_hp, RGB::named(rltk::RED), RGB::named(rltk::BLACK));
         ctx.print_color(68, 1, RGB::named(rltk::WHITE), RGBA::from_f32(0.0,0.0,0.0,0.0), &health);
@@ -185,7 +185,7 @@ pub fn draw_ui(ecs: &World, ctx : &mut Rltk) {
 
 fn monster_tooltip(name: &String, stats: &CombatStats) -> String {
     return match name.as_str() {
-        "You" => format!("Player\nThis is you.\nDrawn by legendary riches, \narmed with sword and shield\n{} attack\n{} defense", stats.power, stats.defense),
+        "Player" => format!("This is you.\nDrawn by legendary riches, \narmed with sword and shield\n{} attack\n{} defense", stats.power, stats.defense),
         "Goblin" => String::from("Goblin\nWeak and cowardly, but numerous\nThoroughly disagreeable\nBlocking is very effective"),
         "Orc" => String::from("Orc\nAttacks fiercely, easily tired.\nFerocious, not to be underestimated\nFend is very effective."),
         "Goblin Knight" => String::from("Goblin Knight\nFormidable attack and defense.\nVulnerable when stamina is low\nGuard stance is vulnerable to \n shield bash attacks"),
@@ -347,8 +347,9 @@ pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> ShoppingResult {
     let runstate = gs.ecs.fetch::<RunState>();
     let player_entity = gs.ecs.fetch::<Entity>();
     let mut players = gs.ecs.write_storage::<Player>();
+    let mut log = gs.ecs.write_resource::<GameLog>();
 
-    let mut player_inv = players.get_mut(*player_entity).unwrap();
+    let player_inv = players.get_mut(*player_entity).unwrap();
 
     if let RunState::Shopping { menu_selection: selection } = *runstate {
         let mut new_selection = selection;
@@ -491,7 +492,7 @@ pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> ShoppingResult {
                 new_selection = selection + 1;
             }
             Some(VirtualKeyCode::Return) => {
-                console::log("executing?");
+                // console::log("executing?");
                 execute_selection = true;
             }
             _ => {}
@@ -521,26 +522,28 @@ pub fn shopping(gs: &mut State, ctx: &mut Rltk) -> ShoppingResult {
             if execute_selection && i == new_selection as usize {
                 match menu_item.result {
                     Return => {
-                        console::log("returning to the barrow");
+                        // console::log("returning to the barrow");
                         return Return
                     }
-                    Purchase { new_state: new_state } => {
+                    Purchase { new_state } => {
                         let mut new_inv = new_state.clone();
-                        console::log("checking purchase");
+                        // console::log("checking purchase");
                         if new_inv.coin >= menu_item.cost {
                             console::log("purchasing");
+                            log.entries.push(format!("You hand over your hard-earned coins"));
                             new_inv.coin -= menu_item.cost;
                             *player_inv = new_inv;
                             return menu_item.result
                         } else {
                             console::log("not enough coin");
+                            log.entries.push(format!("You can't afford that."));
                             // return RunState::Shopping { menu_selection: new_selection }
                             return Selected { selected: 0 }
                         }
                         
                     }
                     _ => {
-                        console::log("not yet implemented");
+                        // console::log("not yet implemented");
                         return menu_item.result
                     }
                 }

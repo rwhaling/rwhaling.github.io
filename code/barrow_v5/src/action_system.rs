@@ -1,5 +1,5 @@
 use specs::prelude::*;
-use super::{CombatStats, Action, WaitMove, CombatStance, Container, Containers, Item, Items, Name, Player, Position, gamelog::GameLog, RunState, Map, TileType, Viewshed};
+use super::{CombatStats, Action, WaitMove, CombatStance, Container, Item, Name, Player, Position, gamelog::GameLog, RunState, Map, Viewshed};
 use super::Containers::*;
 use super::Items::*;
 use super::Command::*;
@@ -7,7 +7,7 @@ use super::AttackMove::*;
 use super::WaitMove::*;
 use super::CombatStance::*;
 
-use rltk::console;
+// use rltk::console;
 
 pub struct ActionSystem {}
 
@@ -24,12 +24,12 @@ impl<'a> System<'a> for ActionSystem {
                         WriteStorage<'a, Position>,
                         WriteStorage<'a, Viewshed>,
                         WriteExpect<'a, rltk::RandomNumberGenerator>,
-                        WriteStorage<'a, Item>,
-                        WriteStorage<'a, Container>
+                        ReadStorage<'a, Item>,
+                        ReadStorage<'a, Container>
                     );
 
     fn run(&mut self, data : Self::SystemData) {
-        let (entities, player_entity, mut log, mut actions, names, mut player, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng, mut items, mut containers) = data;
+        let (entities, player_entity, mut log, mut actions, names, mut player, mut combat_stats, mut map, mut positions, mut viewsheds, mut rng, items, containers) = data;
 
         for (entity, name, action) in (&entities, &names, &actions).join() {
             let eff_action: Action;
@@ -38,6 +38,7 @@ impl<'a> System<'a> for ActionSystem {
                 let subject_stats = combat_stats.get_mut(entity).unwrap(); 
                 if subject_stats.stance == Stun {
                     log.entries.push(format!("#[red]{} is stunned#[], recovering...", &name.name));
+                    log.entries.push(format!("(you cannot attack, move or wait to recover)"));
                     // TODO: use proper command/regen
                     let a = &Action { command: WaitCommand(Wait), cost: -10, stance_after: subject_stats.stance, target: None, position: None };
                     eff_action = *a;
@@ -69,9 +70,9 @@ impl<'a> System<'a> for ActionSystem {
                         (Smash, _ ) => 2,
                         (Bash, Guard ) => 1,
                         (Bash, _ ) => 0,
-                        (Bash, Power) => -1,
+                        // (Bash, Power) => -1,
                         (Poke, _ ) => -1,
-                        (_, Stun) => 1
+                        // (_, Stun) => 1
                     };                    
                     let eff_pow = subject_stats.power + pow_adj;
                     let def_adj = match (a, target_last_command) {
@@ -139,7 +140,7 @@ impl<'a> System<'a> for ActionSystem {
 
                 Action{ command: WaitCommand(w), target: None, cost: ep_cost, .. } => {
                     let mut subject_stats = combat_stats.get_mut(entity).unwrap(); 
-                    let mut player_inv = player.get_mut(entity);
+                    let player_inv = player.get_mut(entity);
 
                     // TODO: wait move ep recovery
                     if *ep_cost != 0 && subject_stats.ep != subject_stats.max_ep {
@@ -156,7 +157,7 @@ impl<'a> System<'a> for ActionSystem {
                 Action{ command: MoveCommand, target: None, position: Some(Position {x,y}), .. } => {
                     let mut pos = positions.get_mut(entity).unwrap();
                     let mut viewshed = viewsheds.get_mut(entity).unwrap();
-                    let mut p = player.get_mut(entity);
+                    let p = player.get_mut(entity);
 
                     let mut container_open = false;
 
@@ -309,9 +310,9 @@ pub fn delete_the_dead(ecs : &mut World) {
         let names = ecs.read_storage::<Name>();
         let entities = ecs.entities();
         let positions = ecs.read_storage::<Position>();
-        let map = ecs.read_resource::<Map>();
+        let _map = ecs.read_resource::<Map>();
         let mut log = ecs.write_resource::<GameLog>();
-        for (entity, stats, position) in (&entities, &combat_stats, &positions).join() {
+        for (entity, stats, _position) in (&entities, &combat_stats, &positions).join() {
             let player = players.get(entity);
             if stats.hp < 1 {
                 match player {
@@ -323,7 +324,6 @@ pub fn delete_the_dead(ecs : &mut World) {
                         dead.push(entity)
                     }
                     Some(_) => {
-                        let tile_type = map.tiles[map.xy_idx(position.x, position.y)];
                         let mut runstate = ecs.write_resource::<RunState>();
                         if *runstate != RunState::GameOver {
                             log.entries.push(format!("#[red]You died! "));

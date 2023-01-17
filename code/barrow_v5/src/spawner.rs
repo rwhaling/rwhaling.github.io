@@ -1,12 +1,12 @@
 use rltk::{ RGB, RandomNumberGenerator };
-use rltk::console;
+// use rltk::console;
 use specs::prelude::*;
-use super::{CombatStats, AttackMove, CombatStance, Player, Renderable, Rect, Map, TileType, Name, Position, Container, Containers, Item, Items, Viewshed, Monster, BlocksTile, SmartMonster, SmartMonsterState };
+use super::{CombatStats, AttackMove, CombatStance, Player, Renderable, Rect, Map, Name, Position, Container, Item, Viewshed, Monster, BlocksTile, SmartMonster, SmartMonsterState };
 use super::Containers::*;
 use super::Items::*;
-use super::Command::*;
+// use super::Command::*;
 use super::AttackMove::*;
-use super::WaitMove::*;
+// use super::WaitMove::*;
 use super::CombatStance::*;
 
 /// Spawns the player and returns his/her entity object.
@@ -24,7 +24,7 @@ pub fn player(ecs : &mut World, player_x : i32, player_y : i32, player_state: Op
         })
         .with(*player)
         .with(Viewshed{ visible_tiles : Vec::new(), range: 8, dirty: true })
-        .with(Name{name: "You".to_string() })
+        .with(Name{name: "Player".to_string() })
         .with(player_stats)
         .build();
     }
@@ -84,7 +84,7 @@ pub fn treasure(ecs: &mut World, loc: (i32, i32), tag: u64) {
 pub fn orc(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('o'), 15, 30, 15, 4, 1, "Orc", Power, Smash, 0.2, 0, 1.0); }
 pub fn goblin(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('g'), 18, 20, 5, 3, 1, "Goblin", Ready, Melee, 0.4, 0, 1.0); }
 pub fn hobgoblin(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('h'), 25, 45, 15, 5, 1, "Hobgoblin", Guard, Bash, 0.5, 20, 0.3); }
-pub fn ogre(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('O'), 40, 45, 5, 6, 3, "Ogre", Ready, Melee, 0.4, 30, 0.7); }
+pub fn _ogre(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('O'), 40, 45, 5, 6, 3, "Ogre", Ready, Melee, 0.4, 30, 0.7); }
 pub fn troll(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('T'), 40, 30, 15, 5, 2, "Troll", Power, Smash, 0.3, 0, 1.0); }
 pub fn kobold(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('k'), 25, 30, 5, 4, 1, "Kobold", Ready, Melee, 0.2, 10, 0.6); }
 pub fn goblin_knight(ecs: &mut World, loc: (i32, i32), tag: u64) { monster(ecs, loc.0, loc.1, tag, rltk::to_cp437('G'), 35, 45, 15, 6, 2, "Goblin Knight", Guard, Bash, 0.5, 20, 0.3); }
@@ -128,14 +128,14 @@ pub fn gen_spawn_points(room: &Rect, count: i32, rng: &mut RandomNumberGenerator
         let y = rng.range(room.y1 + 1, room.y2 + 1);
         res.push((x,y));
     }
-    console::log(format!("spawn points for room {:?}: {:?}", room, res));
+    // console::log(format!("spawn points for room {:?}: {:?}", room, res));
 
     return res
 }
 
 pub fn gen_tags(count: i32, rng: &mut RandomNumberGenerator) -> Vec<u64> {
     let mut res : Vec<u64> = vec![];
-    for i in 0..count {
+    for _i in 0..count {
         res.push(rng.next_u64());
     }
 
@@ -168,7 +168,6 @@ pub fn populate_level_1(ecs: &mut World, rng: &mut RandomNumberGenerator, map: &
         } else {
             // console::log(format!("{} spawning monster at {},{}", i, x, y));
             let roll = rng.roll_dice(1, 6);
-            let monster_tag = rng.next_u64();
 
             match roll {
                 3 => { orc(ecs, spawn_points[0], tags[0]) }
@@ -216,7 +215,7 @@ pub fn populate_level_2(ecs: &mut World, rng: &mut RandomNumberGenerator, map: &
             }
 
             let coin_amount = rng.range(4,10);
-            console::log(format!("spawning {} coins", coin_amount));
+            // console::log(format!("spawning {} coins", coin_amount));
             coins( ecs, spawn_points[2], tags[2], coin_amount);
             barrel( ecs, spawn_points[2], tags[3]);
             barrel( ecs, spawn_points[3], tags[4]);
@@ -256,7 +255,7 @@ pub fn populate_level_3(ecs: &mut World, rng: &mut RandomNumberGenerator, map: &
             }
 
             let coin_amount = rng.range(5,11);
-            console::log(format!("spawning {} coins", coin_amount));
+            // console::log(format!("spawning {} coins", coin_amount));
             coins( ecs, spawn_points[2], tags[2], coin_amount);
             barrel( ecs, spawn_points[2], tags[3]);
             barrel( ecs, spawn_points[3], tags[4]);

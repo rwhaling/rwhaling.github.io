@@ -93,7 +93,7 @@ pub fn try_descend(ecs: &World) -> RunState {
 
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
-    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsDown {
+    if tile_type == TileType::StairsDown {
         let next_level = map.depth + 1;
         log.entries.push(format!("You descend deeper into the barrow..."));
         log.entries.push(format!("(loading level {})", next_level));
@@ -115,18 +115,18 @@ pub fn try_ascend(ecs: &World) -> RunState {
 
     let player_pos = positions.get(*player_entity).unwrap();
     let player = player_res.get(*player_entity).unwrap();
-    console::log(format!("{:?} attempting to ascend at {:?}", *player_entity, player_pos));
+    // console::log(format!("{:?} attempting to ascend at {:?}", *player_entity, player_pos));
 
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
-    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsUp {
+    if tile_type == TileType::StairsUp {
         if player.has_amulet {
             let next_level = map.depth - 1;
             if next_level > 0 {
                 log.entries.push(format!("You ascend toward town, but the amulet's darkness pervades your mind..."));
                 log.entries.push(format!("(loading level {})", next_level));
             }
-            console::log(format!("ascending to {} with amulet", next_level));
+            // console::log(format!("ascending to {} with amulet", next_level));
             return RunState::Ascend { depth: next_level }
 
         } else {
@@ -136,7 +136,7 @@ pub fn try_ascend(ecs: &World) -> RunState {
             } else {
                 log.entries.push(format!("You ascend toward town, but the barrow beckons you to return..."));
             }
-            console::log(format!("ascending to {}", next_level));
+            // console::log(format!("ascending to {}", next_level));
             return RunState::Ascend { depth: next_level }
             // return RunState::Shopping { menu_selection: 0 };        
         }
@@ -154,11 +154,11 @@ pub fn try_quick_ascend(ecs: &World) -> RunState {
 
     let player_pos = positions.get(*player_entity).unwrap();
     let player = player_res.get(*player_entity).unwrap();
-    console::log(format!("{:?} attempting to quick ascend at {:?}", *player_entity, player_pos));
+    // console::log(format!("{:?} attempting to quick ascend at {:?}", *player_entity, player_pos));
 
     let tile_type = map.tiles[map.xy_idx(player_pos.x, player_pos.y)];
 
-    if map.tiles[map.xy_idx(player_pos.x, player_pos.y)] == TileType::StairsUp {
+    if tile_type == TileType::StairsUp {
         if player.has_amulet {
             log.entries.push(format!("The amulet's darkness is a heavy burden as you return to the barrow's entrance\n(cannot quick ascend, try regular ascend)"));
             console::log(format!("cannot quick ascend"));
@@ -242,6 +242,7 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
     let mut actions = ecs.write_storage::<Action>();
     let player = ecs.read_storage::<Player>();
     let positions = ecs.read_storage::<Position>();
+    let mut log = ecs.write_resource::<GameLog>();
     let entities = ecs.entities();
 
     for (_player,player_entity, stats,player_pos) in (&player, &entities, &combat_stats, &positions).join() {
@@ -294,6 +295,10 @@ pub fn try_attack_menu(offset:usize, ecs: &World) -> RunState {
                             actions.insert(player_entity, action).expect("Unable to insert action");
                             return RunState::PlayerTurn              
                         },
+                        AttackCommand(_) => {
+                            log.entries.push(format!("Current target is out of range, cannot attack"));
+                            return RunState::AwaitingInput 
+                        }
                         _ => { return RunState::AwaitingInput }
                     }
                 }

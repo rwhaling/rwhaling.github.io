@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::cmp::Ordering;
-use rltk::{GameState, Rltk, RGB, Point, register_palette_color, RandomNumberGenerator};
+// use std::cmp::Ordering;
+use rltk::{GameState, Rltk, RGB, register_palette_color, RandomNumberGenerator};
 use rltk::console;
 use specs::prelude::*;
 mod components;
@@ -102,16 +102,16 @@ impl State {
             let containers = self.ecs.read_storage::<Container>();
             for (e,pos,player,monster,item,container) in (&self.ecs.entities(), (&pos).maybe(), (&players).maybe(), (&monsters).maybe(), (&items).maybe(), (&containers).maybe()).join() {
                 if player.is_some() && pos.is_some() {
-                    console::log(format!("unloading player entity {:?} {:?} at {:?}", e, player.unwrap(), pos.unwrap()));
+                    // console::log(format!("unloading player entity {:?} {:?} at {:?}", e, player.unwrap(), pos.unwrap()));
                     old_player_pos = Some(*pos.unwrap());
                 } else if monster.is_some() {
-                    console::log(format!("unloading monster entity {:?} {:?}", e, monster.unwrap()));
+                    // console::log(format!("unloading monster entity {:?} {:?}", e, monster.unwrap()));
                     live_tags.insert(monster.unwrap().tag, true);
                 } else if item.is_some() {
-                    console::log(format!("unloading item entity {:?} {:?}", e, item.unwrap()));
+                    // console::log(format!("unloading item entity {:?} {:?}", e, item.unwrap()));
                     live_tags.insert(item.unwrap().tag, true);
                 } else if container.is_some() {
-                    console::log(format!("unloading container entity {:?} {:?}", e, container.unwrap()));
+                    // console::log(format!("unloading container entity {:?} {:?}", e, container.unwrap()));
                     live_tags.insert(container.unwrap().tag, true);
                 }
                 to_delete.push(e);
@@ -127,12 +127,12 @@ impl State {
 
         match old_map {
             Some(ref m) => {
-                console::log(format!("unloading map {:?} at level {}, revealed_tiles: {:?}", m.seed, m.depth, m.revealed_tiles.len()));
-                let mut old_level_state = LevelState { seed: m.seed, live_tags: live_tags, revealed_tiles: m.revealed_tiles.clone(), player_pos: old_player_pos };
+                // console::log(format!("unloading map {:?} at level {}, revealed_tiles: {:?}", m.seed, m.depth, m.revealed_tiles.len()));
+                let old_level_state = LevelState { seed: m.seed, live_tags: live_tags, revealed_tiles: m.revealed_tiles.clone(), player_pos: old_player_pos };
                 self.history.levels.insert(m.depth, old_level_state);
             }
             None => {
-                console::log("no old map to unload");
+                // console::log("no old map to unload");
             }
         }
 
@@ -146,9 +146,9 @@ impl State {
 
         let new_level_spawns : bool;
 
-        let mut new_level_state = match (player_inv, self.history.levels.remove(&depth)) {
+        let new_level_state = match (player_inv, self.history.levels.remove(&depth)) {
             (Some(player), Some(state)) => {
-                console::log(format!("found history for {}, retaining, seed: {}", depth, state.seed));
+                // console::log(format!("found history for {}, retaining, seed: {}", depth, state.seed));
                 if player.has_amulet {
                     new_level_spawns = true;
                 } else {
@@ -156,15 +156,15 @@ impl State {
                 }
                 state
             }
-            (None, Some(state)) => {
+            (None, Some(_state)) => {
                 let new_seed = rng.next_u64();
-                console::log(format!("found history but no player state, discarding, new seed: {}", new_seed));
+                // console::log(format!("found history but no player state, discarding, new seed: {}", new_seed));
                 new_level_spawns = true;
                 LevelState { seed: new_seed, live_tags: HashMap::new(), revealed_tiles: vec![], player_pos: None }
             }
             (_, None) => {
                 let new_seed = rng.next_u64();
-                console::log(format!("no match found in history for {}, creating new seed {}", depth, new_seed));
+                // console::log(format!("no match found in history for {}, creating new seed {}", depth, new_seed));
                 new_level_spawns = true;
                 LevelState { seed: new_seed, live_tags: HashMap::new(), revealed_tiles: vec![], player_pos: None }
             }
@@ -199,7 +199,7 @@ impl State {
         // Get vector of entity tags from spawner
         // todo: 
         if player_inv.is_some() && player_inv.unwrap().has_amulet {
-            console::log(format!("loading level {:?} in amulet_mode", depth));
+            // console::log(format!("loading level {:?} in amulet_mode", depth));
             spawner::populate_level_4(&mut self.ecs, &mut rng, &map);
         } else if depth == 1 {
             spawner::populate_level_1(&mut self.ecs, &mut rng, &map);
@@ -237,7 +237,7 @@ impl State {
                         if new_level_state.live_tags.contains_key(monster_tag) {
                             // could add to live_tags here
                         } else {
-                            console::log(format!("despawning monster {:?}", monster));
+                            // console::log(format!("despawning monster {:?}", monster));
                             to_despawn.push(e);
                         }
                     } else if item.is_some() {
@@ -245,7 +245,7 @@ impl State {
                         if new_level_state.live_tags.contains_key(item_tag) {
                             // could add to live tags here
                         } else {
-                            console::log(format!("despawning item {:?}", item));
+                            // console::log(format!("despawning item {:?}", item));
                             to_despawn.push(e);
                         }
                     } else if container.is_some() {
@@ -253,7 +253,7 @@ impl State {
                         if new_level_state.live_tags.contains_key(container_tag) {
                             // could add to live tags here
                         } else {
-                            console::log(format!("despawning container {:?}", container));
+                            // console::log(format!("despawning container {:?}", container));
                             to_despawn.push(e);
                         }
                     }
@@ -410,7 +410,7 @@ impl GameState for State {
                         // TODO - hack to put player at correct stairs
                     }
                     if player_inv.has_amulet {
-                        console::log(format!("ascending to level {} with amulet, game ending",d));
+                        // console::log(format!("ascending to level {} with amulet, game ending",d));
                         let mut log = self.ecs.write_resource::<GameLog>();
                         log.entries.push(format!("You return to town safely with the Amulet..."));
                         log.entries.push(format!("But Yendor's darkness clings to your spirit."));
@@ -420,13 +420,13 @@ impl GameState for State {
                         newrunstate = RunState::GameOver;
 
                     } else {
-                        console::log(format!("ascending to level {}, shopping instead",d));
+                        // console::log(format!("ascending to level {}, shopping instead",d));
                         newrunstate = RunState::Shopping { menu_selection: 0 }    
                     }
     
 
                 } else {
-                    console::log("ascending to level {}, loading");
+                    // console::log("ascending to level {}, loading");
                     let player_inv:Player;
                     {
                         let player_entity = self.ecs.fetch::<Entity>();
@@ -525,7 +525,7 @@ fn main() -> rltk::BError {
     register_palette_color("cyan", RGB::named(rltk::CYAN));
     register_palette_color("blue", RGB::named(rltk::BLUE));
 
-    let mut history = LevelHistory {
+    let history = LevelHistory {
         levels: HashMap::new(),
     };
     // gs.ecs.insert(history);
@@ -548,7 +548,7 @@ fn main() -> rltk::BError {
     gs.ecs.register::<CombatStats>();
     gs.ecs.register::<Action>();
     gs.ecs.register::<SmartMonster>();
-    let mut rng = rltk::RandomNumberGenerator::new();
+    let rng = rltk::RandomNumberGenerator::new();
     gs.ecs.insert(rng);
     gs.ecs.insert(gamelog::GameLog{ entries : vec![] });
 
