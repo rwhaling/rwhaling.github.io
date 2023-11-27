@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P');
+@import url('https://fonts.googleapis.com/css2?family=Cutive+Mono&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+@media print {
+  @page {
+    margin-top: 2cm;
+    margin-bottom: 2cm;
+  }
+}
+
+body {
+  margin: 1.6cm 0cm;
+  margin: 1cm;
+  font-family: 'Cutive Mono', monospace;
+  font-weight: bold;
+  background-color: #232222;
+  background-color: #fff;
+  color: #eee;
+  color: #666;
+  height: 100%;
+  line-height: 1.5em;
+  padding: 3em;
+  -webkit-print-color-adjust: exact;
+  font-size: 1.25em;
+}
+
+code {
+  color: #5f5;
+  color: #3a3;
+  background-color: #fff;
+}
+
+a {
+  color: #d66;
+  text-decoration: none;
+  font-size: 0.9em;
+}
+
+img {
+  display: block;
+  margin: 2em auto;
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+h1, h2, h3 {
+  font-family: 'Press Start 2P', cursive;
+  margin-top: 3em;
+  page-break-after: avoid;
+  color: #fff;
+  color: #333;
+}
+
+h4 {
+  font-family: 'Press Start 2P', cursive;
+  color: #333;
+}
+
+h2, h3 {
+  page-break-before: always;
+}
+
+h3 {
+  font-size: 16px;
+}
+
+p, h1, h2, h3, li {
+  orphans: 5;
+  widows: 5;
+  page-break-after: avoid;
+}
+
+blockquote {
+  max-width: 100%;
+  padding-right: 1em;
+  page-break-inside: avoid;
+  border-radius: 10px;
+  background-color: #333232;
+  padding: 1em 2em;
+  background-color: #e2e0e0;
+  color: #333;
+  margin-left: 0px;
+  width: 100%;
+}
+
+tr, img {
+  page-break-inside: avoid;
+}
+
+li {
+  /*margin-top: 1em;*/
+}
+
+div.sourceCode::before {
+  content: url(doc/blips.svg);
+  display: block;
+  margin-bottom: 1em;
+  margin-top: 0.5em;
+  margin-left: 0.5em;
+}
+
+div.sourceCode {
+  background-color: #f8f8f8;
+  border: 2px solid #aeaeae;
+  border-radius: 10px;
+  margin: 2em 0px;
+  page-break-inside: avoid;
+  overflow-x: hidden;
+}
+
+div.sourceCode code {
+  background-color: #f8f8f8;
+}
+
+div.sourceCode td.sourceCode {
+  width: 100%;
+}
+
+div.sourceCode td.lineNumbers pre {
+}
+
+div.sourceCode td {
+  line-height: 1.25em;
+}
+
+/*.numberLines pre {
+  border: 0px;
+  margin: 0px;
+  padding: 0px;
+  margin-right: -2em;
+}
+
+.numberLines pre::before*/
