@@ -7,10 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="Your game description goes here.">
     <link rel="icon" href="icon.png">
-    <script src="https://cdn.jsdelivr.net/npm/rot-js@2/dist/rot.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/chr15m/jsfxr@42a643f/riffwave.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/chr15m/jsfxr@42a643f/sfxr.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/nes.css@2.3.0/css/nes.min.css" rel="stylesheet">
+    <!-- <script src="https://cdn.jsdelivr.net/npm/rot-js@2/dist/rot.js"></script> -->
+    <script src="riffwave.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/chr15m/jsfxr@42a643f/sfxr.js"></script> -->
+    <link href="nes.min.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet" id="style">
   </head>
   <body>
@@ -37,6 +37,30 @@
       </div>
       <div id="options">
         <div id="menu" class="nes-container is-rounded is-dark">
+
+      <br/>Class:<br/>
+          <label>
+            <input type="radio"
+                   value="class-warrior"
+                   class="nes-radio is-dark"
+                   name="menu-class"
+                   checked/> 
+            <span>Warrior</span>
+          </label>
+          <label>
+            <input type="radio"
+                   value="class-ranger"
+                   class="nes-radio is-dark"
+                   name="menu-class" /> 
+            <span>Ranger</span>
+          </label>
+          <label>
+            <input type="radio"
+                   value="class-bard"
+                   class="nes-radio is-dark"
+                   name="menu-class" /> 
+            <span>Bard</span>
+          </label>
           <label>
             <input type="radio"
                    value="instructions"
@@ -92,7 +116,7 @@
                target="_blank">kenney.nl</a></li>
           <li>Styles from
             <a href="https://nostalgic-css.github.io/NES.css/"
-               target="_blank">NESS.css</a></li>
+               target="_blank">NES.css</a></li>
           <li>SFX from
             <a href="https://sfxr.me/"
                target="_blank">sfxr.me</a></li>
@@ -132,8 +156,12 @@
         <div class="sprite tomb"></div>
         <p>You're dead.</p>
         <p>You had <span class="gold-stat"></span> gold and <span class="xp-stat"></span> XP.</p>
+        <p>Barrow 2 is a challenging game with permanent death.</p>
+        <p>Press OK to return to the main menu.</p>
+        <p>Press Cheat to return to town.</p>
       </div>
-      <button class="nes-btn is-success action">Ok</button>
+      <button class="nes-btn is-success action" id="lose-cheat">Cheat</button>
+      <button class="nes-btn is-error action" id="lose-ok">Ok</button>
     </div>
 
     <!-- town screen -->
@@ -148,6 +176,48 @@
       <button class="nes-btn townaction" id="shop">Shop</button>
       <button class="nes-btn townaction" id="train">Train</button>
       <button class="nes-btn is-success townaction" id="return">Return</button>
+    </div>
+
+    <div id="townmenu" class="screen modal">
+      <!-- <div class="nes-container is-rounded is-bordered is-dark with-title is-centered">
+        <p class="title">Level Select</p> -->
+        <!-- <div class="sprite town"></div> -->
+          <table class="nes-table is-dark is-bordered" style="margin: 0 auto 0 auto; background-color: #000;">
+            <tr rowspan="4">
+              <td colspan="2"><div class="sprite town"></div>
+                <p>Which level do you wish to return to?</p></td>
+            </tr>
+            <tr>
+              <td><button class="nes-btn is-success townaction" id="dungeon1">dungeon1</button></td>
+              <td><button class="nes-btn is-success townaction" id="dungeon4">dungeon4</button></td>
+            </tr>
+            <tr>
+              <td><button class="nes-btn is-success townaction" id="dungeon2">dungeon2</button></td>
+              <td><button class="nes-btn is-success townaction" id="dungeon5">dungeon5</button></td>
+            </tr>
+            <tr>
+              <td><button class="nes-btn is-success townaction" id="dungeon3">dungeon3</button></td>
+              <td><button class="nes-btn is-success townaction" id="dungeon6">dungeon6</button></td>
+            </tr>
+            <tr>
+              <td><a class="nes-badge"><span class="is-success" id="load-dungeon-1">dungeon1</span></span></td>
+              <td><a class="nes-badge"><span class="is-success" id="load-dungeon-2">dungeon2</span></span></td>
+            </tr>
+            <tr>
+              <td><a class="nes-badge"><span class="is-success" id="load-dungeon-3">dungeon3</span></span></td>
+              <td><a class="nes-badge"><span class="is-success" id="load-dungeon-4">dungeon4</span></span></td>
+            </tr>
+            <tr>
+              <td>description goes here:</td>
+              <td> <a class="nes-badge"><span class="is-success" id="load-dungeon-5">dungeon3</span></span></td>
+            </tr>
+  
+              <td colspan="2">
+                <button class="nes-btn is-success townaction" id="town">Return</button>
+              </td>
+            </tr>
+        </table>
+      <!-- </div> -->
     </div>
 
 
@@ -208,7 +278,7 @@
 
       </div>
       <div id="inventory" class="nes-container is-rounded is-dark">
-        <div>
+        <div id="inventory_container">
           <p>Example inventory</p>
           <ul></ul>
           <span class="toggle">X</span>
@@ -221,6 +291,19 @@
         <div id="btn-down" class="nes-container is-rounded is-dark"><span>&gt;</span></div>
         <div id="btn-right" class="nes-container is-rounded is-dark"><span>&gt;</span></div>
         <div id="btn-skip" class="nes-container is-rounded is-dark"><span>.</span></div>
+      </div>
+      <div id="hud_modal">
+        <table class="nes-table is-dark is-bordered">
+          <tr id="hud_modal_headers">
+            <th id="hud_modal_status"><span class='nes-badge'>Status</span></th>
+            <th id="hud_modal_inventory"><span class='nes-badge'>Inventory</span></th>
+            <th id="hud_modal_journal"><span class='nes-badge'><span class='is-primary'>Journal</span></span></th>
+            <th id="hud_modal_options"><span class='nes-badge'>Options</span></th>
+          </tr>
+          <tr>
+            <td colspan="4">foo bar baz</td>
+          </tr>
+        </table>
       </div>
     </div>
 

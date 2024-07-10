@@ -67,6 +67,28 @@ a:hover {
   background: none;
 }
 
+.nes-badge {
+  height: 1.5em;
+}
+.nes-badge span.is-dark:first-child {
+  position:relative;
+}
+
+.nes-badge span.is-primary:first-child {
+  position:relative;
+}
+
+.nes-badge span.is-success:first-child {
+  position:relative;
+}
+
+.nes-badge span.is-warning:first-child {
+  position:relative;
+}
+
+.nes-badge span.is-error:first-child {
+  position:relative;
+}
 /*** screens ***/
 
 .screen {
@@ -267,7 +289,7 @@ a:hover {
   image-rendering: pixelated;
   transform: scale(8);
   background-image: url("colored_tilemap_packed.png");
-  margin: 80px auto;
+  margin: 40px auto;
 }
 
 .free {
@@ -285,6 +307,10 @@ a:hover {
 
 .town {
   background-position: -40px -56px;
+}
+
+.castle {
+  background-position: -48px -56px;
 }
 
 .ghost {
@@ -427,12 +453,14 @@ a:hover {
   display: block;
   clear: both;
   padding: 8px;
+  visibility: hidden;
 }
 
 #targetstatus_container {
   display: block;
   clear: both;
   padding: 8px;
+  visibility: hidden;
 }
 
 
@@ -545,6 +573,15 @@ a:hover {
    }
 }
 
+#hud_modal {
+  position: absolute;
+  display: flex;
+  margin-left: auto; 
+  margin-right: auto; 
+  bottom: 60%;
+  visibility: hidden;
+}
+
 /*** CSS animations ***/
 
 .fade-in {
@@ -573,3 +610,4 @@ a:hover {
 @keyframes fade-out {
   from{opacity:1; display: flex;} 50%{opacity:1; display: flex;} to{opacity:0; display: none;}
 }
+
