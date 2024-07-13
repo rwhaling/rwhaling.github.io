@@ -256,6 +256,11 @@ a:hover {
   }
 }
 
+table.nes-table td {
+  text-align: justify;
+  padding: 12px;
+}
+
 #instructions div > p {
   text-align: left;
 }
@@ -578,8 +583,10 @@ a:hover {
   display: flex;
   margin-left: auto; 
   margin-right: auto; 
-  bottom: 60%;
+  /* bottom: 60%; */
   visibility: hidden;
+  padding-left: 10%;
+  padding-right: 10%;
 }
 
 /*** CSS animations ***/
